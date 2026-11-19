@@ -1,0 +1,59 @@
+# 60-minute run sheet: "Hello, Agent!"
+
+## Before the talk (15 min, the day before)
+
+- [ ] VS Code + Copilot Chat signed in; custom agents show up in the agent dropdown
+- [ ] `git config user.name` prints your name (step 05 depends on it)
+- [ ] `node -v` (or `python --version`) works, for step 06/07
+- [ ] Run every demo prompt once, so you know the approval prompts and how long each takes
+- [ ] Settings → search "agent skills" and "hooks" → enabled (if those settings exist in your version)
+- [ ] Open `steps/06-mcp-local/.vscode/mcp.json` → **Start**. If it fails, MCP is blocked by policy: use the fallback (below)
+- [ ] Zoom the editor (`Ctrl +`) and chat font; turn off notifications
+- [ ] Optional: one VS Code window per step, already open, so switching is instant
+
+## Timeline
+
+| Time | Section | Step | What to show | Key message |
+|------|---------|------|--------------|-------------|
+| 0:00–0:05 | Intro | – | Title, agenda, "by the end you'll know what every file in `.github/` does" | |
+| 0:05–0:12 | **What is an agent?** | – | [`concepts.md`](concepts.md) loop diagram | Model + loop + tools, inside a **harness** |
+| 0:12–0:17 | Hello, World | 01 | `hello.agent.md`, pick **Hello**, ask anything | An agent is one Markdown file. `tools: []` means it can only talk |
+| 0:17–0:22 | Instructions | 02 | `copilot-instructions.md`, sign-off appears even in built-in Agent; show References | Context the harness adds for you |
+| 0:22–0:27 | Prompt files | 03 | `/greet Priya` | Reusable task vs. persona |
+| 0:27–0:37 | **Skills** | 04 | `Say hello to Priya in Hindi`, expand tool calls: SKILL.md → languages.md; then Swahili | Loaded on demand (progressive disclosure), open format |
+| 0:37–0:45 | **Tools** | 05 | `Say hello to me`, **approval prompt**, the JSON output; remove `execute` and retry | The model asks, the harness acts. `tools:` is the allow-list |
+| 0:45–0:52 | **MCP (local)** | 06 | `node mcp/demo-client.js`, `mcp.json`, `Say hello to Priya` / `Bob` | Your own typed tools; a standard protocol |
+| 0:52–0:56 | Hooks & handoffs | 07 | *Make a greeting card* button → `cards/carlos.md`; `audit.log`; blocked `rm` | Advice vs. enforcement |
+| 0:56–1:00 | Wrap-up + Q&A | – | Final file tree (root README), "which one should I use?" table | |
+
+Running late? Shorten step 03 and step 07 to one sentence each and show
+their files without a live demo.
+
+## Lines that land
+
+* "Every step changes **one** file or adds **one** file. Watch the folder tree."
+* (step 01) "This isn't really an agent yet. It has no tools, so it's a chatbot with a name."
+* (step 04) "The model only sees the skill's *description* until it needs the skill. That's how you can have 50 skills without filling the context."
+* (step 05) "Who ran that script? Not the model. The model *asked*, VS Code asked **you**, then VS Code ran it."
+* (step 06) "MCP is just JSON lines over stdin/stdout. `initialize`, `tools/list`, `tools/call`."
+* (step 07) "Markdown is advice. Hooks and the tool allow-list are enforcement."
+
+## Fallbacks
+
+| Problem | Do this |
+|---------|---------|
+| Agent not in the dropdown | Check you opened the **step folder** (not the repo root). Reload Window. |
+| Skill isn't used | Say "use the greeting-etiquette skill", or type `/greeting-etiquette`. Check the skills setting. |
+| Script approval is slow or blocked | Run `bash …/whoami.sh` / `…whoami.ps1` in the terminal yourself and paste the output. |
+| MCP blocked by policy | `node mcp/demo-client.js` to show the protocol, then use step 05 (script tool) for the live agent demo. |
+| No Node | Switch `.vscode/mcp.json` to the Python server (commented lines in the file). |
+| Hooks don't fire | Preview feature: show `audit.json` + `audit.js`, and run the script by hand: `echo '{"hook_event_name":"PreToolUse","tool_name":"run_in_terminal","tool_input":{"command":"rm -rf cards"}}' \| node .github/hooks/scripts/audit.js` |
+| The model words its reply differently | That's expected, LLMs vary. Point out the parts that matched the skill (greeting word, emoji, name). |
+
+## Audience Q&A crib
+
+* **Do these files work outside VS Code?** Skills and `AGENTS.md`/instructions are read by Copilot CLI and the Copilot cloud agent too. Skills use an open format that other agents (e.g. Claude Code) also read.
+* **Where do personal (not repo) agents/skills go?** In your user profile. Use **Chat: New Custom Agent / New Skill** in the Command Palette and choose *User*.
+* **Can I pin a model per agent?** Yes, `model:` in the agent front matter.
+* **Is MCP safe?** Local stdio servers run with your permissions, like any script. Review them. Organizations can block MCP, or allow-list servers, by policy.
+* **Skill vs. MCP?** A skill is know-how (plus maybe scripts). MCP gives you typed, reusable tools that any MCP client can use. They work well together: the skill says *when and how* to use the tool.

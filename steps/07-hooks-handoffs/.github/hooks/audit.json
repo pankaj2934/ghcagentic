@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "command": "node .github/hooks/scripts/audit.js",
+        "timeout": 10
+      }
+    ],
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "node .github/hooks/scripts/audit.js",
+        "timeout": 10
+      }
+    ]
+  }
+}
