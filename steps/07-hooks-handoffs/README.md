@@ -20,8 +20,8 @@ Two new concepts:
     │   ├── hello.agent.md         ← changed: adds a handoff to Card Writer
     │   └── card-writer.agent.md   ← NEW: second agent, tools: read + edit only
     ├── hooks/
-    │   ├── audit.json             ← NEW: PreToolUse / PostToolUse → audit.js
-    │   └── scripts/audit.js       ← NEW: writes the log, blocks "rm"/"del"
+    │   ├── audit.json             ← NEW: PreToolUse / PostToolUse → audit.py
+    │   └── scripts/audit.py       ← NEW: writes the log, blocks "rm"/"del"
     ├── prompts/greet.prompt.md
     └── skills/…
 ```
@@ -52,7 +52,13 @@ Two new concepts:
 > * look at **Output → GitHub Copilot Chat** for hook errors,
 > * compare `audit.json` with the hooks page in the VS Code docs for your version.
 >
-> The script needs `node` on the PATH and assumes it runs from the workspace root.
+> The hook runs `python .github/hooks/scripts/audit.py` from the workspace root.
+> On Windows, if `python` opens the Microsoft Store, change `python` to `py` in `audit.json`.
+>
+> To show the hook working without the agent, run it yourself (this works in PowerShell and bash):
+> ```
+> '{"hook_event_name":"PreToolUse","tool_name":"run_in_terminal","tool_input":{"command":"rm -rf cards"}}' | python .github/hooks/scripts/audit.py
+> ```
 
 ## Talking point: where each piece lives in the loop
 

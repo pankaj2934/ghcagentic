@@ -4,7 +4,7 @@
 
 - [ ] VS Code + Copilot Chat signed in; custom agents show up in the agent dropdown
 - [ ] `git config user.name` prints your name (step 05 depends on it)
-- [ ] `node -v` (or `python --version`) works, for step 06/07
+- [ ] `python --version` (or `py --version` on Windows) shows Python 3.9 or newer, for step 06/07. Use the same command name in `.vscode/mcp.json` and `.github/hooks/audit.json`
 - [ ] Run every demo prompt once, so you know the approval prompts and how long each takes
 - [ ] Settings → search "agent skills" and "hooks" → enabled (if those settings exist in your version)
 - [ ] Open `steps/06-mcp-local/.vscode/mcp.json` → **Start**. If it fails, MCP is blocked by policy: use the fallback (below)
@@ -22,7 +22,7 @@
 | 0:22–0:27 | Prompt files | 03 | `/greet Priya` | Reusable task vs. persona |
 | 0:27–0:37 | **Skills** | 04 | `Say hello to Priya in Hindi`, expand tool calls: SKILL.md → languages.md; then Swahili | Loaded on demand (progressive disclosure), open format |
 | 0:37–0:45 | **Tools** | 05 | `Say hello to me`, **approval prompt**, the JSON output; remove `execute` and retry | The model asks, the harness acts. `tools:` is the allow-list |
-| 0:45–0:52 | **MCP (local)** | 06 | `node mcp/demo-client.js`, `mcp.json`, `Say hello to Priya` / `Bob` | Your own typed tools; a standard protocol |
+| 0:45–0:52 | **MCP (local)** | 06 | `python mcp/demo_client.py`, `mcp.json`, `Say hello to Priya` / `Bob` | Your own typed tools; a standard protocol |
 | 0:52–0:56 | Hooks & handoffs | 07 | *Make a greeting card* button → `cards/carlos.md`; `audit.log`; blocked `rm` | Advice vs. enforcement |
 | 0:56–1:00 | Wrap-up + Q&A | – | Final file tree (root README), "which one should I use?" table | |
 
@@ -45,9 +45,9 @@ their files without a live demo.
 | Agent not in the dropdown | Check you opened the **step folder** (not the repo root). Reload Window. |
 | Skill isn't used | Say "use the greeting-etiquette skill", or type `/greeting-etiquette`. Check the skills setting. |
 | Script approval is slow or blocked | Run `bash …/whoami.sh` / `…whoami.ps1` in the terminal yourself and paste the output. |
-| MCP blocked by policy | `node mcp/demo-client.js` to show the protocol, then use step 05 (script tool) for the live agent demo. |
-| No Node | Switch `.vscode/mcp.json` to the Python server (commented lines in the file). |
-| Hooks don't fire | Preview feature: show `audit.json` + `audit.js`, and run the script by hand: `echo '{"hook_event_name":"PreToolUse","tool_name":"run_in_terminal","tool_input":{"command":"rm -rf cards"}}' \| node .github/hooks/scripts/audit.js` |
+| MCP blocked by policy | `python mcp/demo_client.py` to show the protocol, then use step 05 (script tool) for the live agent demo. |
+| MCP server won't start | Usually the Python command name: try `py` (Windows) or `python3` (Mac/Linux) in `.vscode/mcp.json`. Check **Output → MCP: hello-mcp** for the error. |
+| Hooks don't fire | Preview feature: show `audit.json` + `audit.py`, and run the script by hand (see the step 07 README for the command) |
 | The model words its reply differently | That's expected, LLMs vary. Point out the parts that matched the skill (greeting word, emoji, name). |
 
 ## Audience Q&A crib

@@ -25,13 +25,19 @@ def part_of_day(hour):
     return "morning" if hour < 12 else "afternoon" if hour < 18 else "evening"
 
 
-def time_in(tz_name=None):
+def time_in(tz_name=None, utc_offset=None):
     now = datetime.datetime.now().astimezone()
-    if tz_name and ZoneInfo:
+    if tz_name:
         try:
             now = datetime.datetime.now(ZoneInfo(tz_name))
         except Exception:
-            pass  # e.g. no tz database on Windows; fall back to local time
+            # Windows Python usually has no time-zone database (it needs the
+            # 'tzdata' package), so fall back to the fixed offset in team.json.
+            if utc_offset:
+                sign = -1 if utc_offset.startswith("-") else 1
+                hours, minutes = utc_offset.lstrip("+-").split(":")
+                delta = datetime.timedelta(hours=int(hours), minutes=int(minutes)) * sign
+                now = datetime.datetime.now(datetime.timezone(delta))
     return {"local_time": now.strftime("%H:%M"), "part_of_day": part_of_day(now.hour)}
 
 
@@ -47,7 +53,7 @@ def lookup_teammate(args):
     wanted = str(args.get("name", "")).strip().lower()
     for person in TEAM:
         if person["name"].lower() == wanted:
-            return {"found": True, **person, **time_in(person["timezone"])}
+            return {"found": True, **person, **time_in(person["timezone"], person.get("utc_offset"))}
     return {"found": False, "known_teammates": [p["name"] for p in TEAM]}
 
 
@@ -105,6 +111,9 @@ def handle(req):
 
 
 if __name__ == "__main__":
+    # Always talk UTF-8, whatever the Windows console code page is.
+    sys.stdin.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8")
     print("[hello-mcp] server started (python)", file=sys.stderr)
     for line in sys.stdin:
         if line.strip():

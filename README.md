@@ -55,11 +55,11 @@ your-repo/
 │   │       └── scripts/whoami.sh|.ps1
 │   └── hooks/
 │       ├── audit.json                 HOOK          harness runs this on every tool call
-│       └── scripts/audit.js
+│       └── scripts/audit.py
 ├── .vscode/
 │   └── mcp.json                       TOOLS (MCP)   how to start your local tool server
 └── mcp/
-    └── hello-mcp-server.js            TOOLS (MCP)   the tool server itself
+    └── hello_mcp_server.py            TOOLS (MCP)   the tool server itself
 ```
 
 ## Learn the concepts
@@ -71,5 +71,5 @@ your-repo/
 
 * VS Code with GitHub Copilot Chat (a recent version; custom agents, skills and hooks are newer features)
 * `git` (step 05 reads `git config user.name`)
-* Step 06/07 only: `node` **or** `python` on the PATH
+* Step 06/07 only: Python 3.9+ on the PATH (`python`, or `py` on Windows). Nothing to `pip install`. A Node version of the MCP server is included too, in case you'd rather use Node.
 * Agent hooks (step 07) are a **preview** feature. Check that they're enabled in your VS Code.

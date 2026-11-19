@@ -1,7 +1,7 @@
 [
-  { "name": "Priya",  "role": "Product Manager",   "city": "Bengaluru", "timezone": "Asia/Kolkata",        "language": "Hindi" },
-  { "name": "Carlos", "role": "Backend Engineer",  "city": "Madrid",    "timezone": "Europe/Madrid",       "language": "Spanish" },
-  { "name": "Amélie", "role": "Designer",          "city": "Lyon",      "timezone": "Europe/Paris",        "language": "French" },
-  { "name": "Kenji",  "role": "SRE",               "city": "Osaka",     "timezone": "Asia/Tokyo",          "language": "Japanese" },
-  { "name": "Sam",    "role": "Engineering Lead",  "city": "Seattle",   "timezone": "America/Los_Angeles", "language": "English" }
+  {"name": "Priya", "role": "Product Manager", "city": "Bengaluru", "timezone": "Asia/Kolkata", "language": "Hindi", "utc_offset": "+05:30"},
+  {"name": "Carlos", "role": "Backend Engineer", "city": "Madrid", "timezone": "Europe/Madrid", "language": "Spanish", "utc_offset": "+01:00"},
+  {"name": "Amélie", "role": "Designer", "city": "Lyon", "timezone": "Europe/Paris", "language": "French", "utc_offset": "+01:00"},
+  {"name": "Kenji", "role": "SRE", "city": "Osaka", "timezone": "Asia/Tokyo", "language": "Japanese", "utc_offset": "+09:00"},
+  {"name": "Sam", "role": "Engineering Lead", "city": "Seattle", "timezone": "America/Los_Angeles", "language": "English", "utc_offset": "-08:00"}
 ]

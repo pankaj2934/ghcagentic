@@ -13,10 +13,10 @@ extension, no `npm install`, no network, no registry.
 ├── .vscode/
 │   └── mcp.json                 ← NEW: tells VS Code how to start the server
 ├── mcp/
-│   ├── hello-mcp-server.js      ← NEW: the server (Node, ~100 lines)
-│   ├── hello_mcp_server.py      ← NEW: same server in Python (if you have no Node)
+│   ├── hello_mcp_server.py      ← NEW: the server (Python standard library only, ~120 lines)
+│   ├── hello-mcp-server.js      ← NEW: the same server in Node (optional)
 │   ├── team.json                ← NEW: the "database" behind lookup_teammate
-│   └── demo-client.js           ← NEW: prints the raw MCP conversation
+│   └── demo_client.py           ← NEW: prints the raw MCP conversation
 └── .github/
     ├── copilot-instructions.md
     ├── agents/hello.agent.md    ← changed: tools adds 'hello-mcp/*'
@@ -37,13 +37,15 @@ extension, no `npm install`, no network, no registry.
 
 1. **Show the protocol first** (works even if MCP is blocked):
    ```bash
-   node mcp/demo-client.js
+   python mcp/demo_client.py
    ```
    Point out the `initialize` → `tools/list` → `tools/call` sequence. That's
    all of MCP that you need to know for this talk.
 2. Open `.vscode/mcp.json`. Click the **Start** link that VS Code shows above
    `"hello-mcp"` (or run **MCP: List Servers** → hello-mcp → Start).
    If VS Code asks whether to trust the server, say yes.
+   *Won't start?* On Windows, if `python` opens the Microsoft Store, change
+   `"command"` to `"py"` in `mcp.json`. On macOS/Linux you may need `"python3"`.
 3. Select **Hello** in chat. Open the 🔧 tool picker: `hello-mcp` and its two
    tools now appear.
 4. Type: `Say hello to Priya`
@@ -63,7 +65,7 @@ MCP can be switched off by an organization policy, **local servers
 included**. If the server won't start or its tools don't appear, the policy is
 probably the reason. Don't try to get around it. Instead:
 
-* run `node mcp/demo-client.js` to show what MCP looks like on the wire, and
+* run `python mcp/demo_client.py` to show what MCP looks like on the wire, and
 * go back to **step 05**: a script shipped in a skill plus the built-in
   `execute` tool gives the agent the same ability, and the skill in this step
   already falls back to it.

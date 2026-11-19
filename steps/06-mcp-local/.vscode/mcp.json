@@ -4,12 +4,14 @@
   "servers": {
     "hello-mcp": {
       "type": "stdio",
-      "command": "node",
-      "args": ["${workspaceFolder}/mcp/hello-mcp-server.js"]
+      // Windows: use "py" if "python" opens the Microsoft Store.
+      // macOS/Linux: you may need "python3".
+      "command": "python",
+      "args": ["${workspaceFolder}/mcp/hello_mcp_server.py"]
 
-      // No Node? Use the Python version instead:
-      // "command": "python",          // or "python3" / "py" on your machine
-      // "args": ["${workspaceFolder}/mcp/hello_mcp_server.py"]
+      // Have Node instead? Use the JavaScript version:
+      // "command": "node",
+      // "args": ["${workspaceFolder}/mcp/hello-mcp-server.js"]
     }
   }
 }
