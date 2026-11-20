@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Agent hook: runs when a prompt arrives, before and after every tool call,
-and when the agent finishes (see ../audit.json).
+when a subagent starts/stops (step 09), and when the agent finishes
+(see ../audit.json).
 
 1. AUDIT: appends one line per event to .github/hooks/logs/audit.log
    (and audit.jsonl, which visualizer/serve.py animates live)
@@ -24,7 +25,12 @@ except json.JSONDecodeError:
 
 hook = event.get("hook_event_name") or event.get("hookEventName") or "unknown"
 tool = event.get("tool_name") or event.get("toolName") or "?"
-tool_input = event.get("tool_input") or event.get("toolArgs") or event.get("prompt") or {}
+tool_input = event.get("tool_input") or event.get("toolArgs") or event.get("prompt")
+if tool_input is None:
+    # Other events (e.g. SubagentStart/SubagentStop): keep the interesting
+    # fields, such as which agent started, and drop the bookkeeping ones.
+    skip = {"hook_event_name", "hookEventName", "session_id", "sessionId", "transcript_path", "cwd", "timestamp"}
+    tool_input = {k: v for k, v in event.items() if k not in skip}
 input_text = tool_input if isinstance(tool_input, str) else json.dumps(tool_input, ensure_ascii=False)
 if tool == "?" and not re.search(r"tool", hook, re.IGNORECASE):
     tool = "-"  # UserPromptSubmit / Stop events aren't about a tool

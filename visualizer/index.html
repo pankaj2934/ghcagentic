@@ -102,6 +102,8 @@ button:focus-visible, .chip:focus-visible, li[tabindex]:focus-visible { outline:
 .node .title { font: 600 13.5px var(--f-display); fill: var(--ink); }
 .node .sub { font: 400 9.8px var(--f-mono); fill: var(--muted); }
 .node.dim { opacity: 0.35; }
+.node.drive rect.box { stroke: var(--kc); stroke-width: 2.4; stroke-dasharray: 5 3; }
+.node.drive .title { text-decoration: underline; text-decoration-color: var(--kc); }
 .node.on rect.box { stroke: var(--kc); stroke-width: 2.4; }
 .node.pulse rect.box { animation: pulse 0.6s ease-out; }
 @keyframes pulse { 0% { stroke-width: 5; } 100% { stroke-width: 2.4; } }
@@ -191,7 +193,7 @@ pre.cmd { font: 400 0.78rem/1.5 var(--f-mono); background: var(--panel-2); borde
       </div>
 
       <div class="card ctx" id="ctx-card">
-        <p class="eyebrow">Context window: what the model sees on its next call</p>
+        <p class="eyebrow" id="ctx-title">Context window: what the model sees on its next call</p>
         <ol id="ctx"></ol>
       </div>
 
@@ -199,11 +201,12 @@ pre.cmd { font: 400 0.78rem/1.5 var(--f-mono); background: var(--panel-2); borde
         <p class="eyebrow">Live hook events</p>
         <p class="status" id="live-status">Not connected</p>
         <div class="controls">
-          <button class="btn primary" id="b-sample" type="button">Play sample trace</button>
+          <button class="btn primary" id="b-sample" type="button">Play sample: one agent</button>
+          <button class="btn" id="b-sample-multi" type="button">Play sample: multi-agent</button>
           <button class="btn" id="b-clear" type="button">Clear</button>
         </div>
         <div id="live-help">
-          <p style="margin:10px 0 0;font-size:.85rem;color:var(--muted)">To see your real Copilot session, run this from the step 07 or 08 folder, then chat with the Hello agent:</p>
+          <p style="margin:10px 0 0;font-size:.85rem;color:var(--muted)">To see your real Copilot session, run this from the step 07, 08 or 09 folder, then chat with Hello (or Welcome Host in step 09):</p>
           <pre class="cmd">python ../../visualizer/serve.py</pre>
         </div>
         <div class="live-log" id="live-log" style="margin-top:10px"></div>
@@ -239,7 +242,9 @@ const NODES = {
   read:    { x: 470, y: 272, w: 180, h: 56,  kind: "tool",    tag: "tool",     title: "Built-in tools",   sub: "read · edit · search" },
   term:    { x: 470, y: 338, w: 180, h: 56,  kind: "tool",    tag: "tool",     title: "Terminal tool",    sub: "execute" },
   mcpc:    { x: 470, y: 404, w: 180, h: 56,  kind: "mcp",     tag: "mcp",      title: "MCP tools",        sub: "hello-mcp/*" },
-  agent2:  { x: 712, y: 34,  w: 164, h: 56,  kind: "context", tag: "agent",    title: "Card Writer",      sub: "card-writer.agent.md" },
+  host:    { x: 712, y: 34,  w: 164, h: 56,  kind: "context", tag: "agent",    title: "Welcome Host",     sub: "orchestrator" },
+  hello:   { x: 712, y: 100, w: 164, h: 56,  kind: "context", tag: "agent",    title: "Hello",            sub: "subagent · greets" },
+  agent2:  { x: 712, y: 166, w: 164, h: 56,  kind: "context", tag: "agent",    title: "Card Writer",      sub: "subagent · makes cards" },
   files:   { x: 712, y: 272, w: 164, h: 56,  kind: "ext",     tag: "disk",     title: "Workspace files",  sub: "cards/ · src/ …" },
   script:  { x: 712, y: 338, w: 164, h: 56,  kind: "ext",     tag: "process",  title: "whoami script",    sub: "identify-user/scripts" },
   mcps:    { x: 712, y: 404, w: 164, h: 56,  kind: "mcp",     tag: "process",  title: "hello-mcp server", sub: "python · stdio" },
@@ -247,7 +252,7 @@ const NODES = {
 const REGIONS = [
   { x: 460, y: 10,  w: 200, h: 222, label: "Context · advice the model reads" },
   { x: 460, y: 248, w: 200, h: 222, label: "Tools · the harness runs them" },
-  { x: 702, y: 10,  w: 184, h: 90,  label: "Other agents" },
+  { x: 702, y: 10,  w: 184, h: 222, label: "Agents · one loop each" },
   { x: 702, y: 248, w: 184, h: 222, label: "On your machine" },
 ];
 
@@ -436,6 +441,66 @@ const SCENARIOS = [
       reply("Created cards/carlos.md.", "Two agents, each with its own tools and its own job. A handoff passed the conversation from one to the other."),
     ],
   },
+  {
+    id: "multi", step: "09", name: "Multi-agent", folder: "steps/09-multi-agent", prompt: "Welcome Priya to the team",
+    steps: [
+      { owner: "Welcome Host", title: "You ask the orchestrator",
+        say: "You pick the Welcome Host agent. It's an orchestrator: it plans the work and hands each part to another agent.",
+        hops: [H("user", "harness", "Welcome Priya to the team", "person")],
+        ctx: [C("You", "Welcome Priya to the team", "person", "your message")] },
+      { owner: "Welcome Host", title: "Host's context: one tool, two helpers", where: ".github/agents/welcome-host.agent.md", parallel: true,
+        say: "Host's only tool is agent, which starts another agent as a subagent. Its agents list says which ones it may start: Hello and Card Writer. It can't greet or write files itself.",
+        hops: [H("host", "harness", "system prompt · tools: agent", "context"), H("instr", "harness", "instructions", "context")],
+        ctx: [C("System prompt", "welcome-host.agent.md · tools: agent · agents: Hello, Card Writer", "context", "always"),
+              C("Instructions", "copilot-instructions.md", "context", "always")] },
+      { owner: "Welcome Host", ...callModel("agent", 1) },
+      { owner: "Welcome Host", title: "Host delegates the greeting to Hello",
+        say: "Following its instructions, Host's model asks the harness to run Hello as a subagent, and writes Hello's task itself.",
+        hops: [H("model", "harness", "call runSubagent(Hello, “Greet Priya…”)", "model")] },
+      { owner: "Hello", fresh: true, title: "Hello starts with a fresh context window", where: ".github/agents/hello.agent.md",
+        say: "The harness starts Hello in its own context: Hello's agent file, the instructions and the task Host wrote. Hello doesn't see your chat or Host's reasoning. That isolation keeps each agent small and focused.",
+        hops: [H("harness", "hello", "task: Greet Priya. Greeting line only.", "harness"), H("hello", "harness", "system prompt · tools: read, execute, hello-mcp/*", "context")],
+        ctx: [C("System prompt", "hello.agent.md · tools: read, execute, hello-mcp/*", "context", "always"),
+              C("Instructions", "copilot-instructions.md", "context", "always"),
+              C("Task (from Host)", "Greet Priya. Reply with the greeting line only, no sign-off.", "context", "task")] },
+      { owner: "Hello", title: "Hello runs its own loop", where: "mcp/hello_mcp_server.py",
+        say: "Inside the subagent it's the same loop as step 06. Hello's model asks for lookup_teammate and the harness calls the MCP server. (Skill loading is left out here to keep it short.)",
+        hops: [H("harness", "model", "Hello's context", "harness"), H("model", "harness", "call lookup_teammate(Priya)", "model"), H("harness", "mcpc", "tools/call", "harness"), H("mcpc", "mcps", "{\"name\":\"Priya\"}", "mcp"), H("mcps", "mcpc", "Hindi · Bengaluru · morning", "mcp"), H("mcpc", "harness", "tool result", "mcp")],
+        ctx: [C("Tool result", "Priya · Hindi · Bengaluru · morning", "mcp", "tool result")] },
+      { owner: "Hello", title: "Hello writes the greeting",
+        say: "Hello's model answers with text, so Hello's loop ends.",
+        hops: [H("harness", "model", "context + tool result", "harness"), H("model", "harness", "Namaste, Priya! 🙏 Good morning.", "model")],
+        ctx: [C("Model", "Namaste, Priya! 🙏 Good morning.", "model", "reply")] },
+      { owner: "Welcome Host", title: "Hello's output goes back to Host",
+        say: "Only Hello's final reply comes back, as the result of Host's runSubagent call. Hello's tool calls and reading stay in Hello's context and are thrown away.",
+        hops: [H("hello", "harness", "return: Namaste, Priya! 🙏 Good morning.", "context")],
+        ctx: [C("Subagent result · Hello", "Namaste, Priya! 🙏 Good morning.", "context", "tool result")] },
+      { owner: "Welcome Host", ...callModel("agent", 2) },
+      { owner: "Welcome Host", title: "Host sends Hello's output to Card Writer",
+        say: "This is the pipeline. Host puts Hello's greeting into Card Writer's task, so the output of agent 1 becomes the input of agent 2.",
+        hops: [H("model", "harness", "call runSubagent(Card Writer, greeting)", "model")] },
+      { owner: "Card Writer", fresh: true, title: "Card Writer starts fresh, with the greeting as its task", where: ".github/agents/card-writer.agent.md",
+        say: "A new, separate context again. Card Writer knows nothing about Priya except what's in its task. Its tools are read and edit: no MCP, no terminal.",
+        hops: [H("harness", "agent2", "task: card for Priya: “Namaste, Priya! 🙏…”", "harness"), H("agent2", "harness", "system prompt · tools: read, edit", "context")],
+        ctx: [C("System prompt", "card-writer.agent.md · tools: read, edit", "context", "always"),
+              C("Instructions", "copilot-instructions.md", "context", "always"),
+              C("Task (from Host)", "Make a greeting card for Priya with this greeting: Namaste, Priya! 🙏 Good morning.", "context", "task")] },
+      { owner: "Card Writer", title: "Card Writer runs its loop and writes the file",
+        say: "Its model asks to create the file. The PreToolUse hook allows it (no “rm”), and the edit tool writes cards/priya.md.",
+        hops: [H("harness", "model", "Card Writer's context", "harness"), H("model", "harness", "call create_file(cards/priya.md)", "model"), H("harness", "hooks", "PreToolUse", "harness"), H("hooks", "harness", "allow · logged", "hook"), H("harness", "read", "create_file", "harness"), H("read", "files", "cards/priya.md", "tool"), H("read", "harness", "done", "tool")],
+        ctx: [C("Tool result", "created cards/priya.md", "tool", "tool result")] },
+      { owner: "Card Writer", title: "Card Writer reports back",
+        say: "Card Writer's model answers with one sentence, and its loop ends.",
+        hops: [H("harness", "model", "context + tool result", "harness"), H("model", "harness", "Created cards/priya.md.", "model")],
+        ctx: [C("Model", "Created cards/priya.md.", "model", "reply")] },
+      { owner: "Welcome Host", title: "Card Writer's output goes back to Host",
+        say: "Again, only the final sentence returns to Host.",
+        hops: [H("agent2", "harness", "return: Created cards/priya.md.", "context")],
+        ctx: [C("Subagent result · Card Writer", "Created cards/priya.md.", "context", "tool result")] },
+      { owner: "Welcome Host", ...callModel("agent", 3) },
+      { owner: "Welcome Host", ...reply("Greeting: Namaste, Priya! 🙏 Good morning. · Card: cards/priya.md", "Three agents and three separate context windows. Host's context held only your message and two short results. The details stayed with the subagent that needed them.") },
+    ],
+  },
 ];
 
 /* --------------------------------------------------------------- helpers */
@@ -456,9 +521,31 @@ function edgePoint(n, toward) {
   const t = Math.min(dx ? (n.w / 2) / Math.abs(dx) : Infinity, dy ? (n.h / 2) / Math.abs(dy) : Infinity);
   return { x: c.x + dx * t, y: c.y + dy * t };
 }
+const AGENT_NODES = new Set(["host", "hello", "agent2"]);
 function endpoints(a, b) {
+  // Agent <-> harness wires run along the gap between the Context and Tools
+  // regions, so they don't cut across other boxes.
+  if (AGENT_NODES.has(a) && b === "harness") return endpoints(b, a).reverse();
+  if (a === "harness" && AGENT_NODES.has(b)) {
+    const H0 = NODES.harness, B = NODES[b], y = 240, cy = B.y + B.h / 2;
+    return [{ x: H0.x + H0.w, y }, { x: 692, y }, { x: 692, y: cy }, { x: B.x, y: cy }];
+  }
   const A = NODES[a], B = NODES[b];
   return [edgePoint(A, center(B)), edgePoint(B, center(A))];
+}
+function pointAt(pts, e) {
+  const segs = [];
+  let total = 0;
+  for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); segs.push(d); total += d; }
+  let dist = e * total;
+  for (let i = 0; i < segs.length; i++) {
+    if (dist <= segs[i] || i === segs.length - 1) {
+      const t = segs[i] ? Math.min(1, dist / segs[i]) : 1;
+      return { x: pts[i].x + (pts[i + 1].x - pts[i].x) * t, y: pts[i].y + (pts[i + 1].y - pts[i].y) * t };
+    }
+    dist -= segs[i];
+  }
+  return pts[pts.length - 1];
 }
 const ekey = (a, b) => [a, b].sort().join("|");
 
@@ -473,11 +560,10 @@ for (const r of REGIONS) {
 }
 const allEdges = new Set();
 for (const s of SCENARIOS) for (const st of s.steps) for (const h of st.hops) allEdges.add(ekey(h.from, h.to));
-["user|harness", "harness|model", "harness|hooks", "harness|read", "harness|term", "harness|mcpc", "read|files", "script|term", "mcpc|mcps"].forEach((k) => allEdges.add(k));
+["user|harness", "harness|model", "harness|hooks", "harness|read", "harness|term", "harness|mcpc", "read|files", "script|term", "mcpc|mcps", "harness|host", "harness|hello", "agent2|harness"].forEach((k) => allEdges.add(k));
 for (const k of allEdges) {
   const [a, b] = k.split("|");
-  const [p, q] = endpoints(a, b);
-  edgeEls[k] = el("line", { class: "edge", x1: p.x, y1: p.y, x2: q.x, y2: q.y }, gEdges);
+  edgeEls[k] = el("polyline", { class: "edge", points: endpoints(a, b).map((pt) => `${pt.x},${pt.y}`).join(" ") }, gEdges);
 }
 for (const [id, n] of Object.entries(NODES)) {
   const g = el("g", { class: "node", style: `--kc: var(${KIND[n.kind]})` }, gNodes);
@@ -511,7 +597,7 @@ function animateHop(hop, myGen, duration = 950) {
     const color = cssVar(KIND[hop.kind] || "--ink");
     if (line) { line.classList.add("hot"); line.style.setProperty("--hot", color); }
     nodeEls[hop.from]?.classList.add("on");
-    const [p, q] = endpoints(hop.from, hop.to);
+    const pts = endpoints(hop.from, hop.to), q = pts[pts.length - 1];
     const g = el("g", { class: "packet" }, gPackets);
     const label = hop.msg.length > 40 ? hop.msg.slice(0, 39) + "…" : hop.msg;
     const rect = el("rect", { rx: 5, height: 19 }, g);
@@ -537,7 +623,8 @@ function animateHop(hop, myGen, duration = 950) {
       if (myGen !== gen) { g.remove(); return resolve(); }
       const t = Math.min(1, (now - t0) / duration);
       const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-      place(p.x + (q.x - p.x) * e, p.y + (q.y - p.y) * e);
+      const pt = pointAt(pts, e);
+      place(pt.x, pt.y);
       if (t < 1) requestAnimationFrame(frame); else finish();
     };
     requestAnimationFrame(frame);
@@ -577,15 +664,21 @@ function selectScenario(s) {
   renderScenarioChips(); renderGuided();
 }
 
+// Each agent has its own context window. Steps say whose loop they belong
+// to (owner); `fresh` starts that agent's context from empty.
 function contextAt(i) {
-  let items = [];
+  const lists = {};
+  let owner = null;
   for (let j = 0; j <= i; j++) {
     const st = scen.steps[j];
-    if (st.drop) items = items.map((it) => it.label === st.drop && !it.gone ? { ...it, gone: true } : it);
-    for (const c of st.ctx || []) items.push({ ...c, newAt: j });
+    owner = st.owner || owner || "agent";
+    if (st.fresh || !lists[owner]) lists[owner] = [];
+    if (st.drop) lists[owner] = lists[owner].map((it) => it.label === st.drop && !it.gone ? { ...it, gone: true } : it);
+    for (const c of st.ctx || []) lists[owner].push({ ...c, newAt: j });
   }
-  return items;
+  return { owner, items: owner ? lists[owner] : [] };
 }
+const AGENT_NODE = { "Welcome Host": "host", "Hello": "hello", "Card Writer": "agent2" };
 
 function renderGuided() {
   const used = usedNodes(scen);
@@ -596,7 +689,8 @@ function renderGuided() {
   $("prompt-line").innerHTML = `<span>${scen.folder} ·</span>${escapeHtml(scen.prompt)}`;
   const modelCalls = scen.steps.slice(0, idx + 1).reduce((n, st) => n + st.hops.filter((h) => h.to === "model").length, 0);
   const toolCalls = scen.steps.slice(0, idx + 1).reduce((n, st) => n + st.hops.filter((h) => ["read", "term", "mcpc"].includes(h.to) && h.from === "harness").length, 0);
-  $("meter").innerHTML = `model calls <b>${modelCalls}</b> · tool runs <b>${toolCalls}</b>`;
+  const subCalls = scen.steps.slice(0, idx + 1).reduce((n, st) => n + st.hops.filter((h) => h.from === "harness" && (h.to === "hello" || h.to === "agent2")).length, 0);
+  $("meter").innerHTML = `model calls <b>${modelCalls}</b> · tool runs <b>${toolCalls}</b>` + (scen.id === "multi" ? ` · subagents <b>${subCalls}</b>` : "");
 
   const st = scen.steps[idx];
   $("narr-step").textContent = idx < 0 ? `Scenario · step ${scen.step}` : `Step ${idx + 1} of ${scen.steps.length}`;
@@ -609,7 +703,12 @@ function renderGuided() {
 
   const ctx = $("ctx");
   ctx.replaceChildren();
-  const items = contextAt(idx);
+  const { owner, items } = contextAt(idx);
+  $("ctx-title").textContent = owner && owner !== "agent"
+    ? `Context window · ${owner}${owner === "Welcome Host" ? " (orchestrator)" : " (subagent, its own context)"}`
+    : "Context window: what the model sees on its next call";
+  Object.values(nodeEls).forEach((g) => g.classList.remove("drive"));
+  if (AGENT_NODE[owner]) nodeEls[AGENT_NODE[owner]].classList.add("drive");
   if (!items.length) {
     const li = document.createElement("li"); li.className = "empty"; li.style.background = "none";
     li.textContent = "Empty. Nothing has been sent to the model yet.";
@@ -683,25 +782,63 @@ function targetFor(tool, input) {
   if (/skills\//.test(i)) return { node: "read", ext: "skills" };
   return { node: "read", ext: "files" };
 }
+// Which agent does this text mention? Used for subagent events.
+function agentFrom(text) {
+  const t = String(text || "").toLowerCase();
+  if (/card.?writer/.test(t)) return "agent2";
+  if (/welcome|host/.test(t)) return "host";
+  return "hello";
+}
+const AGENT_LABEL = { host: "Welcome Host", hello: "Hello", agent2: "Card Writer" };
+const isSubagentTool = (tool) => /subagent|^agent$|run_?agent/i.test(tool || "");
+let liveAgent = null;     // agent whose loop is running right now (null = the one you picked)
+const agentStack = [];
+function setDriving(id) {
+  liveAgent = id;
+  Object.values(nodeEls).forEach((g) => g.classList.remove("drive"));
+  if (id) nodeEls[id].classList.add("drive");
+}
+const inside = () => (liveAgent && liveAgent !== "host" ? ` (inside the ${AGENT_LABEL[liveAgent]} subagent)` : "");
 const short = (s, n = 38) => { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
 
 function hopsFor(ev) {
   const hook = (ev.hook || "").toLowerCase();
+  if (/userprompt/.test(hook)) { agentStack.length = 0; setDriving(null); }
   if (/userprompt/.test(hook)) return { title: "Prompt arrived", say: `You sent: “${short(ev.input, 80)}”. The harness builds the context and calls the model.`,
     hops: [H("user", "harness", short(ev.input), "person"), H("harness", "model", "context + tools", "harness")] };
-  if (/stop/.test(hook)) return { title: "Agent finished", say: "The model answered with text instead of a tool call, so the loop ended and the harness showed you the reply.",
+  if (/^stop$/.test(hook)) { agentStack.length = 0; setDriving(null); }
+  if (/^stop$/.test(hook)) return { title: "Agent finished", say: "The model answered with text instead of a tool call, so the loop ended and the harness showed you the reply.",
     hops: [H("model", "harness", "final text", "model"), H("harness", "user", "reply", "harness")] };
+  if (/subagent.?start/.test(hook)) {
+    const a = agentFrom(ev.input);
+    agentStack.push(liveAgent); setDriving(a);
+    return { title: `Subagent started: ${AGENT_LABEL[a]}`, say: `The harness started ${AGENT_LABEL[a]} with a fresh context window. Its tool calls show up next, until it stops.`,
+      hops: [H("harness", a, "start · fresh context", "harness")] };
+  }
+  if (/subagent.?stop/.test(hook)) {
+    const a = liveAgent || agentFrom(ev.input);
+    setDriving(agentStack.pop() || null);
+    return { title: `Subagent finished: ${AGENT_LABEL[a]}`, say: `${AGENT_LABEL[a]}'s loop ended. Only its final reply goes back to the agent that started it.`,
+      hops: [H(a, "harness", "final reply", "context")] };
+  }
+  if (isSubagentTool(ev.tool)) {
+    const a = agentFrom(ev.input);
+    if (/pre.?tool/.test(hook)) return { title: `Delegating to ${AGENT_LABEL[a]}`, say: `The orchestrator's model asked the harness to run ${AGENT_LABEL[a]} as a subagent. The task text it wrote is the input.`,
+      hops: [H("model", "harness", "call runSubagent", "model"), H("harness", "hooks", "PreToolUse", "harness"), H("harness", a, "task: " + short(ev.input, 30), "harness")] };
+    return { title: `${AGENT_LABEL[a]} returned its result`, say: `${AGENT_LABEL[a]}'s reply comes back as the tool result. If another subagent runs next, this is the input it gets.`,
+      hops: [H(a, "harness", "result", "context"), H("harness", "hooks", "PostToolUse", "harness"), H("harness", "model", "subagent result", "harness")] };
+  }
   const tg = targetFor(ev.tool, ev.input);
   if (/pre.?tool/.test(hook)) {
     const hops = [H("model", "harness", "call " + short(ev.tool, 30), "model"), H("harness", "hooks", "PreToolUse", "harness"), H("harness", tg.node, short(ev.tool, 30), "harness")];
     if (tg.ext) hops.push(H(tg.node, tg.ext, short(ev.input), NODES[tg.node].kind));
-    return { title: `Tool call: ${ev.tool}`, say: `The model asked for ${ev.tool}. Your PreToolUse hook ran first (that's how this page knows), then the harness ran the tool.`, hops };
+    return { title: `Tool call: ${ev.tool}`, say: `The model asked for ${ev.tool}${inside()}. Your PreToolUse hook ran first (that's how this page knows), then the harness ran the tool.`, hops };
   }
   if (/post.?tool/.test(hook)) {
     const hops = [];
     if (tg.ext) hops.push(H(tg.ext, tg.node, "result", NODES[tg.ext].kind));
     hops.push(H(tg.node, "harness", "result", NODES[tg.node].kind), H("harness", "hooks", "PostToolUse", "harness"), H("harness", "model", "tool result", "harness"));
-    return { title: `Result: ${ev.tool}`, say: "The tool finished. PostToolUse logged it, and the result goes back to the model for the next turn of the loop.", hops };
+    return { title: `Result: ${ev.tool}`, say: `The tool finished${inside()}. PostToolUse logged it, and the result goes back to the model for the next turn of the loop.`, hops };
   }
   return { title: ev.hook || "Event", say: "A hook event the visualizer doesn't know how to draw yet.", hops: [] };
 }
@@ -758,10 +895,28 @@ const SAMPLE = [
   { hook: "PostToolUse", tool: "mcp_hello-mcp_lookup_teammate", input: "{\"name\": \"Priya\"}" },
   { hook: "Stop", tool: "-", input: "" },
 ];
-$("b-sample").addEventListener("click", async () => {
-  for (const ev of SAMPLE) { enqueue({ ...ev, time: new Date().toISOString().slice(0, 19) }); await sleep(250); }
-});
-$("b-clear").addEventListener("click", () => { $("live-log").replaceChildren(); liveQueue = []; gen++; clearHot(); });
+const SAMPLE_MULTI = [
+  { hook: "UserPromptSubmit", tool: "-", input: "Welcome Priya to the team" },
+  { hook: "PreToolUse", tool: "runSubagent", input: "{\"agentName\": \"Hello\", \"prompt\": \"Greet Priya. Greeting line only.\"}" },
+  { hook: "SubagentStart", tool: "-", input: "{\"agent_type\": \"Hello\"}" },
+  { hook: "PreToolUse", tool: "mcp_hello-mcp_lookup_teammate", input: "{\"name\": \"Priya\"}" },
+  { hook: "PostToolUse", tool: "mcp_hello-mcp_lookup_teammate", input: "{\"name\": \"Priya\"}" },
+  { hook: "SubagentStop", tool: "-", input: "{\"agent_type\": \"Hello\"}" },
+  { hook: "PostToolUse", tool: "runSubagent", input: "{\"agentName\": \"Hello\"}" },
+  { hook: "PreToolUse", tool: "runSubagent", input: "{\"agentName\": \"Card Writer\", \"prompt\": \"Card for Priya: Namaste, Priya! 🙏\"}" },
+  { hook: "SubagentStart", tool: "-", input: "{\"agent_type\": \"Card Writer\"}" },
+  { hook: "PreToolUse", tool: "create_file", input: "{\"filePath\": \"cards/priya.md\"}" },
+  { hook: "PostToolUse", tool: "create_file", input: "{\"filePath\": \"cards/priya.md\"}" },
+  { hook: "SubagentStop", tool: "-", input: "{\"agent_type\": \"Card Writer\"}" },
+  { hook: "PostToolUse", tool: "runSubagent", input: "{\"agentName\": \"Card Writer\"}" },
+  { hook: "Stop", tool: "-", input: "" },
+];
+async function playSample(list) {
+  for (const ev of list) { enqueue({ ...ev, time: new Date().toISOString().slice(0, 19) }); await sleep(250); }
+}
+$("b-sample").addEventListener("click", () => playSample(SAMPLE));
+$("b-sample-multi").addEventListener("click", () => playSample(SAMPLE_MULTI));
+$("b-clear").addEventListener("click", () => { $("live-log").replaceChildren(); liveQueue = []; gen++; clearHot(); agentStack.length = 0; setDriving(null); });
 
 /* ----------------------------------------------------------------- modes */
 function setMode(m) {
@@ -777,11 +932,12 @@ function setMode(m) {
   if (m === "guided") { selectScenario(scen); return; }
   Object.values(nodeEls).forEach((g) => g.classList.remove("dim"));
   Object.values(edgeEls).forEach((l) => l.classList.add("used"));
+  agentStack.length = 0; setDriving(null);
   $("prompt-line").innerHTML = "<span>live ·</span>events from .github/hooks/logs/audit.jsonl";
   $("meter").textContent = "";
   $("narr-step").textContent = "Live mode";
   $("narr-title").textContent = "Watching your real agent";
-  $("narr-say").textContent = "Each hook event (prompt, tool call, tool result, finish) is animated as it happens. No server? Play the sample trace.";
+  $("narr-say").textContent = "Each hook event (prompt, tool call, tool result, finish) is animated as it happens. No server? Play a sample trace.";
   $("narr-where").textContent = "";
   liveSeen = 0;
   if (location.protocol.startsWith("http") && !pollTimer) { poll(); pollTimer = setInterval(poll, 1000); }
@@ -798,6 +954,7 @@ function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&a
 
 renderScenarioChips();
 setMode(location.hash === "#live" ? "live" : "guided");
+window.addEventListener("hashchange", () => { const m = location.hash === "#live" ? "live" : "guided"; if (m !== mode) setMode(m); });
 })();
 </script>
 </body>

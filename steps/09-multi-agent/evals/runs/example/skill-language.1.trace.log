@@ -1,0 +1,4 @@
+2026-11-20T10:01:02  PreToolUse    read_file  {"filePath": ".github/skills/greeting-etiquette/SKILL.md"}
+2026-11-20T10:01:02  PostToolUse   read_file  {"filePath": ".github/skills/greeting-etiquette/SKILL.md"}
+2026-11-20T10:01:04  PreToolUse    mcp_hello-mcp_lookup_teammate  {"name": "Priya"}
+2026-11-20T10:01:04  PostToolUse   mcp_hello-mcp_lookup_teammate  {"name": "Priya"}

@@ -21,6 +21,9 @@ jobs:
       - name: Run tool evals
         working-directory: steps/08-evals
         run: python evals/test_tools.py
+      - name: Run tool evals (step 09, multi-agent)
+        working-directory: steps/09-multi-agent
+        run: python evals/test_tools.py
       - name: Grade the example run (expected to show one known failure)
         working-directory: steps/08-evals
         run: python evals/grade.py example || echo "The example run has a failure on purpose"

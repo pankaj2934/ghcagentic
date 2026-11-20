@@ -18,6 +18,7 @@ see exactly which file does what.
 | 06 | [`steps/06-mcp-local`](steps/06-mcp-local) | **MCP** (your own tools, local) | `Say hello to Priya` | Namaste, Priya! 🙏 Good morning. Hope Bengaluru… |
 | 07 | [`steps/07-hooks-handoffs`](steps/07-hooks-handoffs) | **Hooks** and **handoffs** | `Say hello to Carlos` → *Make a greeting card* | `cards/carlos.md` + audit log |
 | 08 | [`steps/08-evals`](steps/08-evals) | **Evals**: tool tests, output + trace checks, LLM-as-judge | `python evals/grade.py example`, `/judge baseline` | a pass/fail report per case |
+| 09 | [`steps/09-multi-agent`](steps/09-multi-agent) | **Multi-agent**: an orchestrator runs Hello, then passes its output to Card Writer | `Welcome Priya to the team` (Welcome Host agent) | greeting + `cards/priya.md`, made by two subagents |
 
 ## How to use this repo
 
@@ -45,6 +46,7 @@ your-repo/
 │   ├── agents/
 │   │   ├── hello.agent.md             AGENT         persona + tool allow-list + handoffs
 │   │   ├── card-writer.agent.md       AGENT         a second agent with other tools
+│   │   ├── welcome-host.agent.md      AGENT         orchestrator: runs Hello → Card Writer as subagents
 │   │   └── judge.agent.md             AGENT         grades the others (LLM-as-judge)
 │   ├── prompts/
 │   │   ├── greet.prompt.md            PROMPT        reusable /greet command
@@ -72,7 +74,7 @@ your-repo/
 
 ## Learn the concepts
 
-* [`visualizer/`](visualizer): **Copilot Agent Flow**, an animated diagram of what travels between you, the harness, the model, skills, tools, MCP and hooks for each step. Guided mode opens straight from disk. Live mode animates your real agent's hook events (`python ../../visualizer/serve.py` from step 07/08)
+* [`visualizer/`](visualizer): **Copilot Agent Flow**, an animated diagram of what travels between you, the harness, the model, skills, tools, MCP and hooks for each step. Guided mode opens straight from disk. Live mode animates your real agent's hook events, subagents included (`python ../../visualizer/serve.py` from step 07, 08 or 09)
 
 * [`docs/concepts.md`](docs/concepts.md): what an agent, the harness, tools, skills, MCP and hooks are, with a diagram of the agent loop
 * [`docs/presentation-guide.md`](docs/presentation-guide.md): a 60-minute run sheet with timings, demo prompts and fallbacks
@@ -81,5 +83,5 @@ your-repo/
 
 * VS Code with GitHub Copilot Chat (a recent version; custom agents, skills and hooks are newer features)
 * `git` (step 05 reads `git config user.name`)
-* Step 06–08 only: Python 3.9+ on the PATH (`python`, or `py` on Windows). Nothing to `pip install`. A Node version of the MCP server is included too, in case you'd rather use Node.
+* Step 06–09 only: Python 3.9+ on the PATH (`python`, or `py` on Windows). Nothing to `pip install`. A Node version of the MCP server is included too, in case you'd rather use Node.
 * Agent hooks (step 07) are a **preview** feature. Check that they're enabled in your VS Code.

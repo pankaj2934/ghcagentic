@@ -26,6 +26,7 @@
 | 0:37–0:45 | **Tools** | 05 | `Say hello to me`, **approval prompt**, the JSON output; remove `execute` and retry | The model asks, the harness acts. `tools:` is the allow-list |
 | 0:45–0:52 | **MCP (local)** | 06 | `python mcp/demo_client.py`, `mcp.json`, `Say hello to Priya` / `Bob` | Your own typed tools; a standard protocol |
 | 0:52–0:56 | Hooks & handoffs | 07 | *Make a greeting card* button → `cards/carlos.md`; `audit.log`; blocked `rm` | Advice vs. enforcement |
+| (bonus) | **Multi-agent** | 09 | Guided *09 Multi-agent*, then live: `Welcome Priya to the team` with the visualizer in Live mode | Orchestrator + subagents: output of one is the input of the next; a fresh context each |
 | 0:56–1:03 | **Evals** | 08 | `test_tools.py`; `grade.py example` (the "guessed without the tool" failure); `/judge` | Test properties and the trace, across several runs |
 | 1:03–1:05 | Wrap-up + Q&A | – | Final file tree (root README), "which one should I use?" table | |
 
@@ -48,6 +49,7 @@ live run. Running late on the day? Do the same, and skip `/judge`.
 * (step 05) "Who ran that script? Not the model. The model *asked*, VS Code asked **you**, then VS Code ran it."
 * (step 06) "MCP is just JSON lines over stdin/stdout. `initialize`, `tools/list`, `tools/call`."
 * (step 07) "Markdown is advice. Hooks and the tool allow-list are enforcement."
+* (step 09) "Host has exactly one tool: start another agent. It can't do the work, so it has to delegate. And it only ever sees one line back from each helper."
 * (step 08) "The reply looked perfect, but the trace shows it never called the tool. It guessed. That's why you test the trajectory as well as the answer."
 
 ## Fallbacks

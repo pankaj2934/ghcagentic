@@ -49,7 +49,8 @@ box is the harness.
 | **Handoff** | `handoffs:` in the agent file | A button that passes the conversation to another agent. | 07 |
 | **Eval** | `evals/` (step 08) | A test for agent behaviour: checks properties of the reply and of the tool trace, across several runs. Can be rules or an LLM judge. | 08 |
 | **Trace** | audit-hook log (step 07/08) | The record of which tools the agent called, with which inputs. Lets you test *how* it answered. | 07, 08 |
-| **Subagent** | `agent` tool / `#runSubagent` | An agent that starts another agent with a fresh context for a subtask and gets back a summary. | (mention) |
+| **Subagent** | `agent` tool, `agents:` in the agent file | An agent started by another agent's model, with a fresh, separate context. Only its final reply goes back. | 09 |
+| **Orchestrator** | e.g. `welcome-host.agent.md` | An agent whose job is to delegate: it runs subagents in order and passes one's output into the next one's task. | 09 |
 
 ## Which one should I use?
 

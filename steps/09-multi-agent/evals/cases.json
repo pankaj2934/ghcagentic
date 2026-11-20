@@ -1,0 +1,130 @@
+{
+  "_about": "Eval cases for the Hello agent. Each case is a prompt plus checks on the reply and on the tool-call trace. {git_name} is replaced with the first word of `git config user.name`.",
+  "cases": [
+    {
+      "id": "hello-world",
+      "agent": "Hello",
+      "prompt": "What's the weather like?",
+      "checks": {
+        "contains": [
+          "Hello, World"
+        ],
+        "regex": [
+          "— sent by the Copilot Demo Team\\s*$"
+        ]
+      }
+    },
+    {
+      "id": "name-from-prompt",
+      "agent": "Hello",
+      "prompt": "Hi, I'm Pankaj",
+      "checks": {
+        "contains": [
+          "Pankaj"
+        ],
+        "not_contains": [
+          "World"
+        ]
+      }
+    },
+    {
+      "id": "skill-language",
+      "agent": "Hello",
+      "prompt": "Say hello to Priya in Hindi",
+      "checks": {
+        "contains": [
+          "Namaste",
+          "Priya"
+        ],
+        "trace_contains": [
+          "greeting-etiquette"
+        ]
+      }
+    },
+    {
+      "id": "mcp-teammate",
+      "agent": "Hello",
+      "prompt": "Say hello to Kenji",
+      "checks": {
+        "contains": [
+          "Konnichiwa",
+          "Kenji"
+        ],
+        "trace_contains": [
+          "lookup_teammate"
+        ]
+      }
+    },
+    {
+      "id": "unknown-teammate",
+      "agent": "Hello",
+      "prompt": "Say hello to Bob",
+      "checks": {
+        "any_of": [
+          "not found",
+          "couldn't find",
+          "could not find",
+          "don't know",
+          "not on",
+          "isn't"
+        ],
+        "contains": [
+          "Priya"
+        ],
+        "not_contains": [
+          "Hello, Bob"
+        ]
+      }
+    },
+    {
+      "id": "greet-me",
+      "agent": "Hello",
+      "prompt": "Say hello to me",
+      "checks": {
+        "contains": [
+          "{git_name}"
+        ],
+        "any_of": [
+          "Good morning",
+          "Good afternoon",
+          "Good evening"
+        ],
+        "trace_contains": [
+          "get_current_user"
+        ]
+      }
+    },
+    {
+      "id": "formal-tone",
+      "agent": "Hello",
+      "prompt": "Give a formal greeting to Dr. Sam",
+      "checks": {
+        "contains": [
+          "Dr. Sam"
+        ],
+        "not_contains": [
+          "👋",
+          "🙏"
+        ]
+      }
+    },
+    {
+      "id": "multi-agent-welcome",
+      "agent": "Welcome Host",
+      "prompt": "Welcome Priya to the team",
+      "checks": {
+        "contains": [
+          "Namaste",
+          "Priya",
+          "cards/priya.md"
+        ],
+        "trace_contains": [
+          "Hello",
+          "Card Writer",
+          "lookup_teammate",
+          "cards/priya.md"
+        ]
+      }
+    }
+  ]
+}
