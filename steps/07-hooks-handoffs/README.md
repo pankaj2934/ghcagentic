@@ -60,6 +60,13 @@ Two new concepts:
 > '{"hook_event_name":"PreToolUse","tool_name":"run_in_terminal","tool_input":{"command":"rm -rf cards"}}' | python .github/hooks/scripts/audit.py
 > ```
 
+## Watch it live
+
+The hook also writes `.github/hooks/logs/audit.jsonl`. Run
+`python ../../visualizer/serve.py` and open `http://localhost:8765/#live` in
+**Simple Browser** to see each tool call animate as it happens (see
+[`visualizer/README.md`](../../visualizer/README.md)).
+
 ## Talking point: where each piece lives in the loop
 
 | Piece | Decided by | Can the model skip it? |

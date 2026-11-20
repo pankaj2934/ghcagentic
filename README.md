@@ -72,6 +72,8 @@ your-repo/
 
 ## Learn the concepts
 
+* [`visualizer/`](visualizer): **Copilot Agent Flow**, an animated diagram of what travels between you, the harness, the model, skills, tools, MCP and hooks for each step. Guided mode opens straight from disk. Live mode animates your real agent's hook events (`python ../../visualizer/serve.py` from step 07/08)
+
 * [`docs/concepts.md`](docs/concepts.md): what an agent, the harness, tools, skills, MCP and hooks are, with a diagram of the agent loop
 * [`docs/presentation-guide.md`](docs/presentation-guide.md): a 60-minute run sheet with timings, demo prompts and fallbacks
 

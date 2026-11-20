@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Agent hook: runs before and after every tool call (see ../audit.json).
+"""Agent hook: runs when a prompt arrives, before and after every tool call,
+and when the agent finishes (see ../audit.json).
 
 1. AUDIT: appends one line per event to .github/hooks/logs/audit.log
+   (and audit.jsonl, which visualizer/serve.py animates live)
 2. GUARD: before a tool runs, denies terminal commands that delete files
 
 The harness sends a JSON description of the event on stdin. Field names
@@ -22,15 +24,19 @@ except json.JSONDecodeError:
 
 hook = event.get("hook_event_name") or event.get("hookEventName") or "unknown"
 tool = event.get("tool_name") or event.get("toolName") or "?"
-tool_input = event.get("tool_input") or event.get("toolArgs") or {}
+tool_input = event.get("tool_input") or event.get("toolArgs") or event.get("prompt") or {}
 input_text = tool_input if isinstance(tool_input, str) else json.dumps(tool_input, ensure_ascii=False)
+if tool == "?" and not re.search(r"tool", hook, re.IGNORECASE):
+    tool = "-"  # UserPromptSubmit / Stop events aren't about a tool
 
 # ---- 1. audit log -----------------------------------------------------------
 log_dir = pathlib.Path(".github") / "hooks" / "logs"
 log_dir.mkdir(parents=True, exist_ok=True)
 stamp = datetime.datetime.now().isoformat(timespec="seconds")
-with open(log_dir / "audit.log", "a", encoding="utf-8") as log:
+with open(log_dir / "audit.log", "a", encoding="utf-8") as log:  # for people
     log.write(f"{stamp}  {hook:<12}  {tool}  {input_text[:200]}\n")
+with open(log_dir / "audit.jsonl", "a", encoding="utf-8") as log:  # for the flow visualizer
+    log.write(json.dumps({"time": stamp, "hook": hook, "tool": tool, "input": input_text[:500]}, ensure_ascii=False) + "\n")
 
 # ---- 2. guard: no deleting files from the terminal --------------------------
 is_pre = re.search(r"pre.?tool.?use", hook, re.IGNORECASE)

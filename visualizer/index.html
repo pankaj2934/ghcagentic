@@ -1,0 +1,804 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Copilot Agent Flow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a wiring diagram of the agent loop (left) beside a narration + context-window panel (right); steps listed underneath. */
+:root {
+  --bg: #eef1f5;
+  --panel: #ffffff;
+  --panel-2: #f6f8fb;
+  --ink: #141c26;
+  --muted: #586678;
+  --line: #d3dae3;
+  --focus: #0a66c2;
+
+  --k-person: #3c4756;
+  --k-harness: #23405f;
+  --k-model: #4b45c6;
+  --k-context: #8a6514;
+  --k-skill: #b85a00;
+  --k-tool: #0c7d6e;
+  --k-mcp: #1c66c4;
+  --k-hook: #b8332f;
+  --k-ext: #5d6a7a;
+  --k-approve: #a86a00;
+
+  --f-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1319; --panel: #151c25; --panel-2: #1a2330; --ink: #e5eaf0; --muted: #94a2b3; --line: #2b3746; --focus: #5ea8ff;
+    --k-person: #b4bfcc; --k-harness: #8fb3dc; --k-model: #a29cff; --k-context: #e0b75a; --k-skill: #ff9f45;
+    --k-tool: #3fd0bb; --k-mcp: #6aa9ff; --k-hook: #ff7a72; --k-ext: #9aa8b8; --k-approve: #f0b43c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1319; --panel: #151c25; --panel-2: #1a2330; --ink: #e5eaf0; --muted: #94a2b3; --line: #2b3746; --focus: #5ea8ff;
+  --k-person: #b4bfcc; --k-harness: #8fb3dc; --k-model: #a29cff; --k-context: #e0b75a; --k-skill: #ff9f45;
+  --k-tool: #3fd0bb; --k-mcp: #6aa9ff; --k-hook: #ff7a72; --k-ext: #9aa8b8; --k-approve: #f0b43c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.5 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 32px;
+}
+.wrap { max-width: 1360px; margin: 0 auto; display: grid; gap: 14px; }
+
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; justify-content: space-between; }
+h1 { font: 700 1.45rem/1.2 var(--f-display); margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+h1 small { display: block; font: 400 0.85rem/1.4 var(--f-body); color: var(--muted); letter-spacing: 0; margin-top: 2px; }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.seg button { font: 500 0.85rem var(--f-body); border: 0; background: transparent; color: var(--muted); padding: 7px 14px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+button:focus-visible, .chip:focus-visible, li[tabindex]:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.scen { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: 500 0.82rem var(--f-body); color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; cursor: pointer;
+}
+.chip b { font-family: var(--f-mono); font-weight: 500; color: var(--muted); margin-right: 6px; }
+.chip[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 14px; align-items: start; }
+@media (max-width: 1080px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+.stage { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.stage-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; padding: 12px 16px 0; }
+.prompt-line { font: 500 0.9rem var(--f-mono); color: var(--ink); }
+.prompt-line span { color: var(--muted); font-family: var(--f-body); font-weight: 400; margin-right: 6px; }
+.meter { font: 400 0.8rem var(--f-mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.meter b { color: var(--k-model); font-weight: 500; }
+.diagram { overflow-x: auto; padding: 4px 8px 10px; }
+.diagram svg { display: block; width: 100%; min-width: 760px; height: auto; }
+
+/* SVG styling */
+.region rect { fill: var(--panel-2); stroke: none; }
+.region text { font: 500 9.5px var(--f-mono); letter-spacing: 0.08em; fill: var(--muted); text-transform: uppercase; }
+.edge { stroke: var(--line); stroke-width: 1.4; stroke-dasharray: 3 4; fill: none; }
+.edge.used { stroke: var(--muted); opacity: 0.55; }
+.edge.hot { stroke: var(--hot, var(--ink)); stroke-width: 2.4; stroke-dasharray: none; opacity: 1; }
+.node rect.box { fill: var(--panel); stroke: var(--line); stroke-width: 1.2; transition: stroke 0.2s, opacity 0.2s; }
+.node .dot { fill: var(--kc); }
+.node .title { font: 600 13.5px var(--f-display); fill: var(--ink); }
+.node .sub { font: 400 9.8px var(--f-mono); fill: var(--muted); }
+.node.dim { opacity: 0.35; }
+.node.on rect.box { stroke: var(--kc); stroke-width: 2.4; }
+.node.pulse rect.box { animation: pulse 0.6s ease-out; }
+@keyframes pulse { 0% { stroke-width: 5; } 100% { stroke-width: 2.4; } }
+.packet circle { stroke: var(--panel); stroke-width: 2; }
+.packet rect { fill: var(--ink); }
+.packet text { font: 500 10.5px var(--f-mono); fill: var(--bg); }
+
+/* Side panel */
+.side { display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.eyebrow { font: 500 0.7rem var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+.narr h2 { font: 600 1.12rem/1.3 var(--f-display); margin: 0 0 6px; text-wrap: balance; }
+.narr p { margin: 0; color: var(--ink); max-width: 62ch; }
+.narr .where { margin-top: 10px; font: 400 0.8rem var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+.btn { font: 500 0.85rem var(--f-body); border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); border-radius: 7px; padding: 6px 12px; cursor: pointer; }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.kbd { font: 400 0.75rem var(--f-mono); color: var(--muted); margin-left: auto; }
+
+.ctx ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ctx li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: baseline; padding: 7px 9px; border-radius: 7px; background: var(--panel-2); }
+.ctx li .k { grid-row: span 2; width: 9px; height: 9px; border-radius: 50%; background: var(--kc); margin-top: 5px; }
+.ctx li .l { font: 500 0.83rem var(--f-body); overflow-wrap: anywhere; }
+.ctx li .d { font: 400 0.75rem var(--f-mono); color: var(--muted); overflow-wrap: anywhere; }
+.ctx li .t { font: 500 0.65rem var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--kc); margin-left: 6px; }
+.ctx li.new { animation: slide 0.45s ease-out; box-shadow: inset 0 0 0 1px var(--kc); }
+.ctx li.gone .l, .ctx li.gone .d { text-decoration: line-through; opacity: 0.55; }
+.ctx .empty { color: var(--muted); font-size: 0.85rem; }
+@keyframes slide { from { transform: translateX(8px); } to { transform: none; } }
+
+.steps ol { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; counter-reset: s; }
+.steps li { counter-increment: s; display: flex; gap: 8px; align-items: baseline; padding: 6px 9px; border-radius: 7px; cursor: pointer; font-size: 0.84rem; color: var(--muted); border: 1px solid transparent; }
+.steps li::before { content: counter(s); font: 500 0.72rem var(--f-mono); color: var(--muted); min-width: 1.4em; font-variant-numeric: tabular-nums; }
+.steps li.done { color: var(--ink); }
+.steps li.cur { color: var(--ink); background: var(--panel-2); border-color: var(--line); font-weight: 500; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 400 0.75rem var(--f-mono); color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--kc); margin-right: 6px; }
+
+.live-log { max-height: 320px; overflow: auto; display: grid; gap: 4px; font: 400 0.76rem var(--f-mono); }
+.live-log div { display: grid; grid-template-columns: 64px 128px minmax(0, 1fr); gap: 8px; padding: 4px 6px; border-radius: 5px; background: var(--panel-2); }
+.live-log div span:last-child { overflow-wrap: anywhere; color: var(--muted); }
+.status { font: 500 0.8rem var(--f-mono); }
+.status.ok { color: var(--k-tool); } .status.bad { color: var(--k-hook); }
+pre.cmd { font: 400 0.78rem/1.5 var(--f-mono); background: var(--panel-2); border-radius: 7px; padding: 8px 10px; margin: 8px 0 0; overflow-x: auto; white-space: pre; }
+
+@media (prefers-reduced-motion: reduce) {
+  .node.pulse rect.box, .ctx li.new { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Copilot Agent Flow<small>What travels between you, the harness, the model, skills, tools and hooks for each demo step.</small></h1>
+    <div class="seg" role="group" aria-label="Mode">
+      <button id="mode-guided" type="button" aria-pressed="true">Guided</button>
+      <button id="mode-live" type="button" aria-pressed="false">Live</button>
+    </div>
+  </header>
+
+  <nav class="scen" id="scenarios" aria-label="Scenarios"></nav>
+
+  <div class="main">
+    <section class="stage" aria-label="Flow diagram">
+      <div class="stage-head">
+        <div class="prompt-line" id="prompt-line"></div>
+        <div class="meter" id="meter"></div>
+      </div>
+      <div class="diagram"><svg id="svg" viewBox="0 0 890 482" role="img" aria-label="Diagram of the agent loop"></svg></div>
+    </section>
+
+    <aside class="side">
+      <div class="card narr" id="narr-card" aria-live="polite">
+        <p class="eyebrow" id="narr-step"></p>
+        <h2 id="narr-title"></h2>
+        <p id="narr-say"></p>
+        <p class="where" id="narr-where"></p>
+        <div class="controls" id="guided-controls">
+          <button class="btn" id="b-prev" type="button">← Back</button>
+          <button class="btn primary" id="b-next" type="button">Next →</button>
+          <button class="btn" id="b-play" type="button">Play</button>
+          <button class="btn" id="b-reset" type="button">Restart</button>
+          <span class="kbd">← → Space</span>
+        </div>
+      </div>
+
+      <div class="card ctx" id="ctx-card">
+        <p class="eyebrow">Context window: what the model sees on its next call</p>
+        <ol id="ctx"></ol>
+      </div>
+
+      <div class="card" id="live-card" hidden>
+        <p class="eyebrow">Live hook events</p>
+        <p class="status" id="live-status">Not connected</p>
+        <div class="controls">
+          <button class="btn primary" id="b-sample" type="button">Play sample trace</button>
+          <button class="btn" id="b-clear" type="button">Clear</button>
+        </div>
+        <div id="live-help">
+          <p style="margin:10px 0 0;font-size:.85rem;color:var(--muted)">To see your real Copilot session, run this from the step 07 or 08 folder, then chat with the Hello agent:</p>
+          <pre class="cmd">python ../../visualizer/serve.py</pre>
+        </div>
+        <div class="live-log" id="live-log" style="margin-top:10px"></div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="card steps" id="steps-card" aria-label="Steps">
+    <p class="eyebrow">Steps in this scenario</p>
+    <ol id="steps"></ol>
+  </section>
+
+  <div class="legend" id="legend"></div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ------------------------------------------------------------------ nodes */
+const KIND = {
+  person: "--k-person", harness: "--k-harness", model: "--k-model", context: "--k-context",
+  skill: "--k-skill", tool: "--k-tool", mcp: "--k-mcp", hook: "--k-hook", ext: "--k-ext", approve: "--k-approve",
+};
+const NODES = {
+  user:    { x: 16,  y: 212, w: 124, h: 72,  kind: "person",  tag: "you",      title: "You",              sub: "Copilot Chat panel" },
+  model:   { x: 212, y: 34,  w: 190, h: 76,  kind: "model",   tag: "model",    title: "Model",            sub: "the LLM: reads, writes text" },
+  harness: { x: 212, y: 196, w: 190, h: 104, kind: "harness", tag: "harness",  title: "Harness",          sub: "VS Code · Copilot Chat" },
+  hooks:   { x: 212, y: 392, w: 190, h: 70,  kind: "hook",    tag: "hook",     title: "Hooks",            sub: ".github/hooks/*.json" },
+  agent:   { x: 470, y: 34,  w: 180, h: 56,  kind: "context", tag: "agent",    title: "Agent file",       sub: "agents/hello.agent.md" },
+  instr:   { x: 470, y: 100, w: 180, h: 56,  kind: "context", tag: "instr.",   title: "Instructions",     sub: "copilot-instructions.md" },
+  skills:  { x: 470, y: 166, w: 180, h: 56,  kind: "skill",   tag: "skill",    title: "Skills",           sub: "skills/*/SKILL.md" },
+  read:    { x: 470, y: 272, w: 180, h: 56,  kind: "tool",    tag: "tool",     title: "Built-in tools",   sub: "read · edit · search" },
+  term:    { x: 470, y: 338, w: 180, h: 56,  kind: "tool",    tag: "tool",     title: "Terminal tool",    sub: "execute" },
+  mcpc:    { x: 470, y: 404, w: 180, h: 56,  kind: "mcp",     tag: "mcp",      title: "MCP tools",        sub: "hello-mcp/*" },
+  agent2:  { x: 712, y: 34,  w: 164, h: 56,  kind: "context", tag: "agent",    title: "Card Writer",      sub: "card-writer.agent.md" },
+  files:   { x: 712, y: 272, w: 164, h: 56,  kind: "ext",     tag: "disk",     title: "Workspace files",  sub: "cards/ · src/ …" },
+  script:  { x: 712, y: 338, w: 164, h: 56,  kind: "ext",     tag: "process",  title: "whoami script",    sub: "identify-user/scripts" },
+  mcps:    { x: 712, y: 404, w: 164, h: 56,  kind: "mcp",     tag: "process",  title: "hello-mcp server", sub: "python · stdio" },
+};
+const REGIONS = [
+  { x: 460, y: 10,  w: 200, h: 222, label: "Context · advice the model reads" },
+  { x: 460, y: 248, w: 200, h: 222, label: "Tools · the harness runs them" },
+  { x: 702, y: 10,  w: 184, h: 90,  label: "Other agents" },
+  { x: 702, y: 248, w: 184, h: 222, label: "On your machine" },
+];
+
+/* -------------------------------------------------------------- scenarios
+   step = { title, say, where?, hops: [{from, to, msg, kind}], parallel?, ctx?: [items], drop?: "label prefix" }
+   ctx item = { label, detail, kind, tag }                                    */
+const H = (from, to, msg, kind) => ({ from, to, msg, kind });
+const C = (label, detail, kind, tag) => ({ label, detail, kind, tag });
+
+const youSay = (p) => ({
+  title: "You send a message",
+  say: "You pick the Hello agent and type a message. It goes to the harness (Copilot Chat in VS Code), not straight to the model.",
+  hops: [H("user", "harness", p, "person")],
+  ctx: [C("You", p, "person", "your message")],
+});
+const callModel = (tools, n) => ({
+  title: n > 1 ? `Back to the model (call #${n})` : "The harness calls the model",
+  say: n > 1
+    ? "The tool result goes back to the model in a new call, with everything before it. This is the agent loop: model → tool → model → … until the model answers with plain text."
+    : `The harness sends the whole context window (right) plus the list of tools the model may ask for: ${tools}.`,
+  hops: [H("harness", "model", n > 1 ? "context + tool result" : `context · tools: ${tools}`, "harness")],
+});
+const reply = (text, why) => ({
+  title: "The model answers with text, so the loop ends",
+  say: why,
+  hops: [H("model", "harness", text, "model"), H("harness", "user", text, "harness")],
+  ctx: [C("Model", text, "model", "reply")],
+});
+
+const SCENARIOS = [
+  {
+    id: "hello", step: "01", name: "Hello World", folder: "steps/01-hello-agent", prompt: "What's the weather like?",
+    steps: [
+      youSay("What's the weather like?"),
+      { title: "The harness loads the agent file", where: ".github/agents/hello.agent.md",
+        say: "The selected agent's Markdown body becomes the system prompt. Its tools list is empty (tools: []), so the model will be offered no tools at all.",
+        hops: [H("agent", "harness", "system prompt · tools: []", "context")],
+        ctx: [C("System prompt", "hello.agent.md: “reply with exactly Hello, World!”", "context", "always")] },
+      callModel("none", 1),
+      reply("Hello, World! 👋", "With no tools, writing text is the only thing the model can do. That makes this a chatbot with a name, not yet an agent. Every next step adds one piece."),
+    ],
+  },
+  {
+    id: "instr", step: "02", name: "Instructions", folder: "steps/02-instructions", prompt: "Hi, I'm Pankaj",
+    steps: [
+      youSay("Hi, I'm Pankaj"),
+      { title: "The harness loads the agent file", where: ".github/agents/hello.agent.md",
+        say: "Same agent as before, now told to use a name if it knows one.",
+        hops: [H("agent", "harness", "system prompt · tools: []", "context")],
+        ctx: [C("System prompt", "hello.agent.md", "context", "always")] },
+      { title: "The harness adds the instructions by itself", where: ".github/copilot-instructions.md",
+        say: "You didn't attach this file. The harness adds it to every request in this workspace, whichever agent is selected. That's why the sign-off shows up everywhere.",
+        hops: [H("instr", "harness", "copilot-instructions.md", "context")],
+        ctx: [C("Instructions", "≤ 2 sentences · end with the sign-off", "context", "always")] },
+      callModel("none", 1),
+      reply("Hello, Pankaj! 👋 — sent by the Copilot Demo Team", "It knows your name only because you typed it. It still has no way to find anything out by itself."),
+    ],
+  },
+  {
+    id: "skill", step: "04", name: "Skill", folder: "steps/04-skill", prompt: "Say hello to Priya in Hindi",
+    steps: [
+      youSay("Say hello to Priya in Hindi"),
+      { title: "The harness builds the context", parallel: true,
+        say: "Agent file and instructions as before. For each skill, only its name and one-line description are added, a few dozen tokens. The full SKILL.md stays on disk until it's needed. This is called progressive disclosure.",
+        hops: [H("agent", "harness", "tools: read", "context"), H("instr", "harness", "instructions", "context"), H("skills", "harness", "names + descriptions", "skill")],
+        ctx: [C("System prompt", "hello.agent.md · tools: read", "context", "always"),
+              C("Instructions", "copilot-instructions.md", "context", "always"),
+              C("Skill catalog", "greeting-etiquette: “Rules for greeting a person by name, in a language…”", "skill", "always")] },
+      callModel("read", 1),
+      { title: "The model asks to read the skill", where: ".github/skills/greeting-etiquette/SKILL.md",
+        say: "The request matches the skill's description, so the model asks for a tool call. It can't open files itself. It can only ask the harness, which runs the read tool.",
+        hops: [H("model", "harness", "call read_file(SKILL.md)", "model"), H("harness", "read", "read_file", "harness"), H("read", "skills", "greeting-etiquette/SKILL.md", "tool"), H("skills", "harness", "SKILL.md contents", "skill")],
+        ctx: [C("Skill (loaded)", "greeting-etiquette/SKILL.md: name → language → format → tone", "skill", "on demand")] },
+      callModel("read", 2),
+      { title: "The skill says “look it up, don't guess”", where: ".github/skills/greeting-etiquette/references/languages.md",
+        say: "Step 2 of the skill points to a reference table. The model asks for a second file. References load only when a step needs them.",
+        hops: [H("model", "harness", "call read_file(languages.md)", "model"), H("harness", "read", "read_file", "harness"), H("read", "skills", "references/languages.md", "tool"), H("skills", "harness", "Hindi → Namaste 🙏", "skill")],
+        ctx: [C("Reference (loaded)", "languages.md: Hindi → Namaste · 🙏", "skill", "on demand")] },
+      callModel("read", 3),
+      reply("Namaste, Priya! 🙏", "Three model calls for one greeting. The model followed the skill's steps, and every fact came from a file it read."),
+    ],
+  },
+  {
+    id: "tool", step: "05", name: "Tool (script)", folder: "steps/05-tool-script", prompt: "Say hello to me",
+    steps: [
+      youSay("Say hello to me"),
+      { title: "The harness builds the context", parallel: true,
+        say: "The agent now allows two tools: read and execute. There are two skills in the catalog.",
+        hops: [H("agent", "harness", "tools: read, execute", "context"), H("instr", "harness", "instructions", "context"), H("skills", "harness", "2 skill descriptions", "skill")],
+        ctx: [C("System prompt", "hello.agent.md · tools: read, execute", "context", "always"),
+              C("Instructions", "copilot-instructions.md", "context", "always"),
+              C("Skill catalog", "greeting-etiquette · identify-user", "skill", "always")] },
+      callModel("read, execute", 1),
+      { title: "The model loads both skills",
+        say: "“Greet me” matches greeting-etiquette, which says to use identify-user when the name is unknown. So the model reads both SKILL.md files.",
+        hops: [H("model", "harness", "call read_file × 2", "model"), H("harness", "read", "read_file", "harness"), H("read", "skills", "2 × SKILL.md", "tool"), H("skills", "harness", "contents", "skill")],
+        ctx: [C("Skill (loaded)", "greeting-etiquette/SKILL.md", "skill", "on demand"),
+              C("Skill (loaded)", "identify-user/SKILL.md: run whoami.ps1 / whoami.sh", "skill", "on demand")] },
+      callModel("read, execute", 2),
+      { title: "The model asks to run a command",
+        say: "identify-user says which script to run. The model asks the harness to run it in the terminal.",
+        hops: [H("model", "harness", "call run_in_terminal(whoami.ps1)", "model")] },
+      { title: "The harness asks you first",
+        say: "Commands can change things, so the harness shows an approval prompt. The model can't skip it. Only you can click Allow.",
+        hops: [H("harness", "user", "Allow this command?", "approve"), H("user", "harness", "Allow", "person")] },
+      { title: "The harness runs the script", where: ".github/skills/identify-user/scripts/whoami.ps1",
+        say: "VS Code runs the script in the terminal and captures what it prints. The model never touched your machine.",
+        hops: [H("harness", "term", "run_in_terminal", "harness"), H("term", "script", "whoami.ps1", "tool"), H("script", "term", "{\"name\":\"Pankaj\",…}", "ext"), H("term", "harness", "stdout", "tool")],
+        ctx: [C("Tool result", "{\"name\":\"Pankaj\", \"part_of_day\":\"afternoon\"}", "tool", "tool result")] },
+      callModel("read, execute", 3),
+      reply("Hello, Pankaj! 👋 Good afternoon.", "The model asked, the harness asked you, the harness ran the script, and the model used the result. That's what makes it an agent."),
+    ],
+  },
+  {
+    id: "mcp", step: "06", name: "MCP tool", folder: "steps/06-mcp-local", prompt: "Say hello to Priya",
+    steps: [
+      youSay("Say hello to Priya"),
+      { title: "The harness builds the context, including MCP tools", parallel: true,
+        say: "When you started hello-mcp, the harness asked it for tools/list. Each MCP tool's name, description and input schema are offered to the model, next to the built-in tools.",
+        hops: [H("agent", "harness", "tools: read, execute, hello-mcp/*", "context"), H("instr", "harness", "instructions", "context"), H("skills", "harness", "skill descriptions", "skill"), H("mcps", "mcpc", "tools/list", "mcp"), H("mcpc", "harness", "2 tool schemas", "mcp")],
+        ctx: [C("System prompt", "hello.agent.md · tools: read, execute, hello-mcp/*", "context", "always"),
+              C("Instructions", "copilot-instructions.md", "context", "always"),
+              C("Skill catalog", "greeting-etiquette · identify-user", "skill", "always"),
+              C("MCP tools", "get_current_user() · lookup_teammate(name)", "mcp", "always")] },
+      callModel("read, execute, 2 × MCP", 1),
+      { title: "The model loads the greeting skill",
+        say: "The skill now says: for a colleague, call lookup_teammate first.",
+        hops: [H("model", "harness", "call read_file(SKILL.md)", "model"), H("harness", "read", "read_file", "harness"), H("read", "skills", "greeting-etiquette/SKILL.md", "tool"), H("skills", "harness", "contents", "skill")],
+        ctx: [C("Skill (loaded)", "greeting-etiquette: teammates → lookup_teammate", "skill", "on demand")] },
+      callModel("read, execute, 2 × MCP", 2),
+      { title: "The model picks an MCP tool",
+        say: "The model picks the tool by its description and fills in arguments that match its inputSchema: {\"name\": \"Priya\"}. The harness asks you to approve it.",
+        hops: [H("model", "harness", "call lookup_teammate({name:\"Priya\"})", "model"), H("harness", "user", "Allow lookup_teammate?", "approve"), H("user", "harness", "Allow", "person")] },
+      { title: "The harness calls the MCP server", where: "mcp/hello_mcp_server.py",
+        say: "The harness sends a JSON-RPC tools/call message to the server's stdin. The server looks Priya up in team.json and writes the answer to stdout.",
+        hops: [H("harness", "mcpc", "tools/call", "harness"), H("mcpc", "mcps", "{\"method\":\"tools/call\",…}", "mcp"), H("mcps", "mcpc", "{\"language\":\"Hindi\",\"city\":\"Bengaluru\"…}", "mcp"), H("mcpc", "harness", "tool result", "mcp")],
+        ctx: [C("Tool result", "Priya · Hindi · Bengaluru · morning", "mcp", "tool result")] },
+      callModel("read, execute, 2 × MCP", 3),
+      reply("Namaste, Priya! 🙏 Good morning. Hope Bengaluru is treating you well!", "Her language, her time zone and her city all came from your own tool. None of it is in the model's training data."),
+    ],
+  },
+  {
+    id: "hook", step: "07", name: "Hook blocks a tool", folder: "steps/07-hooks-handoffs", prompt: "Delete the cards folder using the terminal",
+    steps: [
+      youSay("Delete the cards folder using the terminal"),
+      { title: "The harness builds the context and calls the model",
+        say: "This time with the built-in Agent, which may use the terminal.",
+        hops: [H("harness", "model", "context · tools: …, execute", "harness")],
+        ctx: [C("System prompt", "built-in Agent · tools: read, edit, execute …", "context", "always")] },
+      { title: "The model asks to run rm",
+        say: "The model does what you asked and requests a terminal command.",
+        hops: [H("model", "harness", "call run_in_terminal(\"rm -rf cards\")", "model")] },
+      { title: "PreToolUse: the harness runs your hook first", where: ".github/hooks/audit.json → scripts/audit.py",
+        say: "Before any tool runs, the harness runs your hook command and sends it the tool name and input as JSON on stdin.",
+        hops: [H("harness", "hooks", "PreToolUse · rm -rf cards", "harness")] },
+      { title: "The hook says no",
+        say: "audit.py sees “rm” and prints permissionDecision: deny. The harness won't run the command, even if you'd have clicked Allow. Markdown is advice. A hook is enforcement.",
+        hops: [H("hooks", "harness", "deny: deleting files is not allowed", "hook")],
+        ctx: [C("Tool result", "denied by hook: deleting files is not allowed", "hook", "tool result")] },
+      callModel("…", 2),
+      reply("I can't delete files here: a workspace policy blocks it.", "The hook ran in the harness, outside the model. The model can't skip it or talk its way around it."),
+    ],
+  },
+  {
+    id: "handoff", step: "07", name: "Handoff", folder: "steps/07-hooks-handoffs", prompt: "Say hello to Carlos → Make a greeting card",
+    steps: [
+      { title: "The reply comes with a handoff button", where: "hello.agent.md → handoffs:",
+        say: "Hello greeted Carlos. Its agent file lists a handoff, so the harness shows a “Make a greeting card” button under the reply.",
+        hops: [H("harness", "user", "¡Hola, Carlos! 🌞 + [Make a greeting card]", "harness")],
+        ctx: [C("System prompt", "hello.agent.md", "context", "always"), C("Model", "¡Hola, Carlos! 🌞 Good evening.", "model", "reply")] },
+      { title: "You click the button",
+        say: "The handoff's prompt is placed in the chat box. You press Enter.",
+        hops: [H("user", "harness", "Turn the greeting above into a card", "person")],
+        ctx: [C("You", "Turn the greeting above into a greeting card file.", "person", "your message")] },
+      { title: "The harness switches agents", where: ".github/agents/card-writer.agent.md",
+        say: "The conversation moves to Card Writer. Its system prompt and tool list replace Hello's. It can edit files, but it can't run commands or call MCP. Each agent gets only the tools its job needs.",
+        hops: [H("agent2", "harness", "system prompt · tools: read, edit", "context")],
+        drop: "System prompt",
+        ctx: [C("System prompt", "card-writer.agent.md · tools: read, edit", "context", "always")] },
+      callModel("read, edit", 1),
+      { title: "The model asks to create a file; the hooks log it",
+        say: "PreToolUse runs (and allows it, since there's no “rm”), then the edit tool writes the file, then PostToolUse logs the result to audit.log.",
+        hops: [H("model", "harness", "call create_file(cards/carlos.md)", "model"), H("harness", "hooks", "PreToolUse", "harness"), H("hooks", "harness", "allow · logged", "hook"), H("harness", "read", "create_file", "harness"), H("read", "files", "cards/carlos.md", "tool"), H("read", "harness", "done", "tool"), H("harness", "hooks", "PostToolUse · logged", "harness")],
+        ctx: [C("Tool result", "created cards/carlos.md", "tool", "tool result")] },
+      callModel("read, edit", 2),
+      reply("Created cards/carlos.md.", "Two agents, each with its own tools and its own job. A handoff passed the conversation from one to the other."),
+    ],
+  },
+];
+
+/* --------------------------------------------------------------- helpers */
+const $ = (id) => document.getElementById(id);
+const svg = $("svg");
+const NS = "http://www.w3.org/2000/svg";
+const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const el = (tag, attrs = {}, parent) => {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+};
+const center = (n) => ({ x: n.x + n.w / 2, y: n.y + n.h / 2 });
+function edgePoint(n, toward) {
+  const c = center(n), dx = toward.x - c.x, dy = toward.y - c.y;
+  if (!dx && !dy) return c;
+  const t = Math.min(dx ? (n.w / 2) / Math.abs(dx) : Infinity, dy ? (n.h / 2) / Math.abs(dy) : Infinity);
+  return { x: c.x + dx * t, y: c.y + dy * t };
+}
+function endpoints(a, b) {
+  const A = NODES[a], B = NODES[b];
+  return [edgePoint(A, center(B)), edgePoint(B, center(A))];
+}
+const ekey = (a, b) => [a, b].sort().join("|");
+
+/* ------------------------------------------------------------ draw static */
+const gRegions = el("g", {}, svg), gEdges = el("g", {}, svg), gNodes = el("g", {}, svg), gPackets = el("g", {}, svg);
+const edgeEls = {}, nodeEls = {};
+
+for (const r of REGIONS) {
+  const g = el("g", { class: "region" }, gRegions);
+  el("rect", { x: r.x, y: r.y, width: r.w, height: r.h, rx: 10 }, g);
+  el("text", { x: r.x + 10, y: r.y + 16 }, g).textContent = r.label;
+}
+const allEdges = new Set();
+for (const s of SCENARIOS) for (const st of s.steps) for (const h of st.hops) allEdges.add(ekey(h.from, h.to));
+["user|harness", "harness|model", "harness|hooks", "harness|read", "harness|term", "harness|mcpc", "read|files", "script|term", "mcpc|mcps"].forEach((k) => allEdges.add(k));
+for (const k of allEdges) {
+  const [a, b] = k.split("|");
+  const [p, q] = endpoints(a, b);
+  edgeEls[k] = el("line", { class: "edge", x1: p.x, y1: p.y, x2: q.x, y2: q.y }, gEdges);
+}
+for (const [id, n] of Object.entries(NODES)) {
+  const g = el("g", { class: "node", style: `--kc: var(${KIND[n.kind]})` }, gNodes);
+  el("rect", { class: "box", x: n.x, y: n.y, width: n.w, height: n.h, rx: 9 }, g);
+  el("circle", { class: "dot", cx: n.x + 14, cy: n.y + 17, r: 4.5 }, g);
+  el("text", { class: "title", x: n.x + 26, y: n.y + 21.5 }, g).textContent = n.title;
+  el("text", { class: "sub", x: n.x + 14, y: n.y + 40 }, g).textContent = n.sub;
+  if (id === "harness") {
+    el("text", { class: "sub", x: n.x + 14, y: n.y + 58 }, g).textContent = "builds context · runs loop";
+    el("text", { class: "sub", x: n.x + 14, y: n.y + 72 }, g).textContent = "runs tools · asks you first";
+  }
+  if (id === "model") el("text", { class: "sub", x: n.x + 14, y: n.y + 54 }, g).textContent = "can only ASK for tools";
+  nodeEls[id] = g;
+}
+
+/* --------------------------------------------------------------- packets */
+let gen = 0;  // bumps whenever animations should stop
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function pulse(id) {
+  const g = nodeEls[id];
+  if (!g) return;
+  g.classList.remove("pulse"); void g.getBBox(); g.classList.add("pulse");
+}
+
+function animateHop(hop, myGen, duration = 950) {
+  return new Promise((resolve) => {
+    const k = ekey(hop.from, hop.to);
+    const line = edgeEls[k];
+    const color = cssVar(KIND[hop.kind] || "--ink");
+    if (line) { line.classList.add("hot"); line.style.setProperty("--hot", color); }
+    nodeEls[hop.from]?.classList.add("on");
+    const [p, q] = endpoints(hop.from, hop.to);
+    const g = el("g", { class: "packet" }, gPackets);
+    const label = hop.msg.length > 40 ? hop.msg.slice(0, 39) + "…" : hop.msg;
+    const rect = el("rect", { rx: 5, height: 19 }, g);
+    const text = el("text", {}, g); text.textContent = label;
+    const tw = text.getComputedTextLength ? text.getComputedTextLength() : label.length * 6.3;
+    rect.setAttribute("width", tw + 14);
+    el("circle", { r: 6.5, fill: color }, g);
+    const place = (x, y) => {
+      const lx = Math.max(4, Math.min(886 - tw - 14, x - (tw + 14) / 2));
+      const ly = y < 40 ? y + 12 : y - 31;
+      rect.setAttribute("x", lx); rect.setAttribute("y", ly);
+      text.setAttribute("x", lx + 7); text.setAttribute("y", ly + 13);
+      g.querySelector("circle").setAttribute("cx", x); g.querySelector("circle").setAttribute("cy", y);
+    };
+    const finish = () => {
+      g.remove();
+      if (myGen === gen) { nodeEls[hop.to]?.classList.add("on"); pulse(hop.to); }
+      resolve();
+    };
+    if (reduced) { place(q.x, q.y); setTimeout(finish, 350); return; }
+    const t0 = performance.now();
+    const frame = (now) => {
+      if (myGen !== gen) { g.remove(); return resolve(); }
+      const t = Math.min(1, (now - t0) / duration);
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      place(p.x + (q.x - p.x) * e, p.y + (q.y - p.y) * e);
+      if (t < 1) requestAnimationFrame(frame); else finish();
+    };
+    requestAnimationFrame(frame);
+  });
+}
+
+function clearHot() {
+  Object.values(edgeEls).forEach((l) => { l.classList.remove("hot"); l.style.removeProperty("--hot"); });
+  Object.values(nodeEls).forEach((g) => g.classList.remove("on"));
+  gPackets.replaceChildren();
+}
+
+/* ---------------------------------------------------------------- guided */
+let scen = SCENARIOS[0], idx = -1, playing = false, playTimer = null;
+
+function usedNodes(s) {
+  const set = new Set(["user", "harness", "model"]);
+  for (const st of s.steps) for (const h of st.hops) { set.add(h.from); set.add(h.to); }
+  return set;
+}
+
+function renderScenarioChips() {
+  const nav = $("scenarios");
+  nav.replaceChildren();
+  for (const s of SCENARIOS) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.id = "scen-" + s.id;
+    b.innerHTML = `<b>${s.step}</b>${s.name}`;
+    b.setAttribute("aria-pressed", s === scen ? "true" : "false");
+    b.addEventListener("click", () => selectScenario(s));
+    nav.appendChild(b);
+  }
+}
+
+function selectScenario(s) {
+  stopPlay(); scen = s; idx = -1; gen++; clearHot();
+  renderScenarioChips(); renderGuided();
+}
+
+function contextAt(i) {
+  let items = [];
+  for (let j = 0; j <= i; j++) {
+    const st = scen.steps[j];
+    if (st.drop) items = items.map((it) => it.label === st.drop && !it.gone ? { ...it, gone: true } : it);
+    for (const c of st.ctx || []) items.push({ ...c, newAt: j });
+  }
+  return items;
+}
+
+function renderGuided() {
+  const used = usedNodes(scen);
+  for (const [id, g] of Object.entries(nodeEls)) g.classList.toggle("dim", !used.has(id));
+  const usedEdges = new Set(scen.steps.flatMap((st) => st.hops.map((h) => ekey(h.from, h.to))));
+  for (const [k, l] of Object.entries(edgeEls)) l.classList.toggle("used", usedEdges.has(k));
+
+  $("prompt-line").innerHTML = `<span>${scen.folder} ·</span>${escapeHtml(scen.prompt)}`;
+  const modelCalls = scen.steps.slice(0, idx + 1).reduce((n, st) => n + st.hops.filter((h) => h.to === "model").length, 0);
+  const toolCalls = scen.steps.slice(0, idx + 1).reduce((n, st) => n + st.hops.filter((h) => ["read", "term", "mcpc"].includes(h.to) && h.from === "harness").length, 0);
+  $("meter").innerHTML = `model calls <b>${modelCalls}</b> · tool runs <b>${toolCalls}</b>`;
+
+  const st = scen.steps[idx];
+  $("narr-step").textContent = idx < 0 ? `Scenario · step ${scen.step}` : `Step ${idx + 1} of ${scen.steps.length}`;
+  $("narr-title").textContent = idx < 0 ? `${scen.name}: “${scen.prompt}”` : st.title;
+  $("narr-say").textContent = idx < 0 ? "Press Next (or →) to follow the request through the harness one hop at a time. Play runs it on its own." : st.say;
+  $("narr-where").textContent = idx >= 0 && st.where ? "file: " + st.where : (idx < 0 ? "Open this folder in VS Code: " + scen.folder : "");
+  $("b-prev").disabled = idx < 0;
+  $("b-next").disabled = idx >= scen.steps.length - 1;
+  $("b-play").textContent = playing ? "Pause" : "Play";
+
+  const ctx = $("ctx");
+  ctx.replaceChildren();
+  const items = contextAt(idx);
+  if (!items.length) {
+    const li = document.createElement("li"); li.className = "empty"; li.style.background = "none";
+    li.textContent = "Empty. Nothing has been sent to the model yet.";
+    ctx.appendChild(li);
+  }
+  for (const it of items) {
+    const li = document.createElement("li");
+    li.style.setProperty("--kc", `var(${KIND[it.kind]})`);
+    if (it.newAt === idx) li.classList.add("new");
+    if (it.gone) li.classList.add("gone");
+    li.innerHTML = `<span class="k"></span><span class="l">${escapeHtml(it.label)}<span class="t">${escapeHtml(it.gone ? "replaced" : it.tag)}</span></span><span class="d">${escapeHtml(it.detail)}</span>`;
+    ctx.appendChild(li);
+  }
+
+  const ol = $("steps");
+  ol.replaceChildren();
+  scen.steps.forEach((s, j) => {
+    const li = document.createElement("li");
+    li.tabIndex = 0;
+    li.textContent = s.title;
+    if (j < idx) li.classList.add("done");
+    if (j === idx) li.classList.add("cur");
+    li.addEventListener("click", () => { stopPlay(); go(j); });
+    li.addEventListener("keydown", (e) => { if (e.key === "Enter") { stopPlay(); go(j); } });
+    ol.appendChild(li);
+  });
+}
+
+async function go(i) {
+  idx = Math.max(-1, Math.min(scen.steps.length - 1, i));
+  const myGen = ++gen;
+  clearHot();
+  renderGuided();
+  if (idx < 0) return;
+  const st = scen.steps[idx];
+  if (st.parallel) await Promise.all(st.hops.map((h) => animateHop(h, myGen)));
+  else for (const h of st.hops) { if (myGen !== gen) return; await animateHop(h, myGen); }
+  return myGen === gen;
+}
+
+async function play() {
+  playing = true; renderGuided();
+  if (idx >= scen.steps.length - 1) idx = -1;
+  while (playing && idx < scen.steps.length - 1) {
+    const ok = await go(idx + 1);
+    if (!ok || !playing) break;
+    await sleep(1600);
+  }
+  playing = false; renderGuided();
+}
+function stopPlay() { playing = false; }
+
+$("b-next").addEventListener("click", () => { stopPlay(); go(idx + 1); });
+$("b-prev").addEventListener("click", () => { stopPlay(); go(idx - 1); });
+$("b-reset").addEventListener("click", () => { stopPlay(); go(-1); });
+$("b-play").addEventListener("click", () => (playing ? stopPlay() : play()));
+document.addEventListener("keydown", (e) => {
+  if (mode !== "guided" || e.target.closest("input, textarea")) return;
+  if (e.key === "ArrowRight") { e.preventDefault(); stopPlay(); go(idx + 1); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); stopPlay(); go(idx - 1); }
+  else if (e.key === " " && !e.target.closest("button")) { e.preventDefault(); playing ? stopPlay() : play(); }
+});
+
+/* ------------------------------------------------------------------ live */
+let mode = "guided", liveNext = 0, liveQueue = [], liveBusy = false, pollTimer = null, liveSeen = 0;
+
+function targetFor(tool, input) {
+  const t = (tool || "").toLowerCase(), i = (input || "").toLowerCase().replace(/\\+/g, "/");
+  if (/mcp|lookup_teammate|get_current_user/.test(t)) return { node: "mcpc", ext: "mcps" };
+  if (/terminal|run_in|execute|shell|command|bash|powershell/.test(t)) return { node: "term", ext: /whoami/.test(i) ? "script" : null };
+  if (/skills\//.test(i)) return { node: "read", ext: "skills" };
+  return { node: "read", ext: "files" };
+}
+const short = (s, n = 38) => { s = String(s || ""); return s.length > n ? s.slice(0, n - 1) + "…" : s; };
+
+function hopsFor(ev) {
+  const hook = (ev.hook || "").toLowerCase();
+  if (/userprompt/.test(hook)) return { title: "Prompt arrived", say: `You sent: “${short(ev.input, 80)}”. The harness builds the context and calls the model.`,
+    hops: [H("user", "harness", short(ev.input), "person"), H("harness", "model", "context + tools", "harness")] };
+  if (/stop/.test(hook)) return { title: "Agent finished", say: "The model answered with text instead of a tool call, so the loop ended and the harness showed you the reply.",
+    hops: [H("model", "harness", "final text", "model"), H("harness", "user", "reply", "harness")] };
+  const tg = targetFor(ev.tool, ev.input);
+  if (/pre.?tool/.test(hook)) {
+    const hops = [H("model", "harness", "call " + short(ev.tool, 30), "model"), H("harness", "hooks", "PreToolUse", "harness"), H("harness", tg.node, short(ev.tool, 30), "harness")];
+    if (tg.ext) hops.push(H(tg.node, tg.ext, short(ev.input), NODES[tg.node].kind));
+    return { title: `Tool call: ${ev.tool}`, say: `The model asked for ${ev.tool}. Your PreToolUse hook ran first (that's how this page knows), then the harness ran the tool.`, hops };
+  }
+  if (/post.?tool/.test(hook)) {
+    const hops = [];
+    if (tg.ext) hops.push(H(tg.ext, tg.node, "result", NODES[tg.ext].kind));
+    hops.push(H(tg.node, "harness", "result", NODES[tg.node].kind), H("harness", "hooks", "PostToolUse", "harness"), H("harness", "model", "tool result", "harness"));
+    return { title: `Result: ${ev.tool}`, say: "The tool finished. PostToolUse logged it, and the result goes back to the model for the next turn of the loop.", hops };
+  }
+  return { title: ev.hook || "Event", say: "A hook event the visualizer doesn't know how to draw yet.", hops: [] };
+}
+
+function logEvent(ev) {
+  const row = document.createElement("div");
+  const time = (ev.time || "").slice(11, 19) || new Date().toTimeString().slice(0, 8);
+  row.innerHTML = `<span>${escapeHtml(time)}</span><span>${escapeHtml(ev.hook || "")}</span><span>${escapeHtml(ev.tool && ev.tool !== "-" ? ev.tool + "  " : "")}${escapeHtml(short(ev.input, 160))}</span>`;
+  $("live-log").prepend(row);
+  while ($("live-log").children.length > 60) $("live-log").lastChild.remove();
+}
+
+function enqueue(ev) { logEvent(ev); liveQueue.push(ev); if (!liveBusy) drain(); }
+async function drain() {
+  liveBusy = true;
+  while (liveQueue.length && mode === "live") {
+    const ev = liveQueue.shift();
+    const st = hopsFor(ev);
+    liveSeen++;
+    $("narr-step").textContent = `Live event ${liveSeen}`;
+    $("narr-title").textContent = st.title;
+    $("narr-say").textContent = st.say;
+    $("narr-where").textContent = ev.input && ev.tool !== "-" ? "input: " + short(ev.input, 200) : "";
+    const myGen = ++gen;
+    clearHot();
+    for (const h of st.hops) { if (myGen !== gen) break; await animateHop(h, myGen, liveQueue.length > 3 ? 380 : 650); }
+  }
+  liveBusy = false;
+}
+
+async function poll() {
+  try {
+    const r = await fetch(`api/events?after=${liveNext}`, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    liveNext = data.next;
+    $("live-status").textContent = data.log_exists ? "Connected · watching " + data.log.split(/[\\/]/).slice(-5).join("/") : "Connected · waiting for the first hook event (send a chat message)";
+    $("live-status").className = "status ok";
+    $("live-help").hidden = true;
+    data.events.forEach(enqueue);
+  } catch {
+    $("live-status").textContent = "Not connected: open this page through serve.py to see real events";
+    $("live-status").className = "status bad";
+    $("live-help").hidden = false;
+    clearInterval(pollTimer); pollTimer = null;
+  }
+}
+
+const SAMPLE = [
+  { hook: "UserPromptSubmit", tool: "-", input: "Say hello to Priya" },
+  { hook: "PreToolUse", tool: "read_file", input: "{\"filePath\": \".github/skills/greeting-etiquette/SKILL.md\"}" },
+  { hook: "PostToolUse", tool: "read_file", input: "{\"filePath\": \".github/skills/greeting-etiquette/SKILL.md\"}" },
+  { hook: "PreToolUse", tool: "mcp_hello-mcp_lookup_teammate", input: "{\"name\": \"Priya\"}" },
+  { hook: "PostToolUse", tool: "mcp_hello-mcp_lookup_teammate", input: "{\"name\": \"Priya\"}" },
+  { hook: "Stop", tool: "-", input: "" },
+];
+$("b-sample").addEventListener("click", async () => {
+  for (const ev of SAMPLE) { enqueue({ ...ev, time: new Date().toISOString().slice(0, 19) }); await sleep(250); }
+});
+$("b-clear").addEventListener("click", () => { $("live-log").replaceChildren(); liveQueue = []; gen++; clearHot(); });
+
+/* ----------------------------------------------------------------- modes */
+function setMode(m) {
+  mode = m; stopPlay(); gen++; clearHot();
+  $("mode-guided").setAttribute("aria-pressed", m === "guided");
+  $("mode-live").setAttribute("aria-pressed", m === "live");
+  $("scenarios").hidden = m !== "guided";
+  $("guided-controls").hidden = m !== "guided";
+  $("ctx-card").hidden = m !== "guided";
+  $("steps-card").hidden = m !== "guided";
+  $("live-card").hidden = m !== "live";
+  try { history.replaceState(null, "", m === "live" ? "#live" : "#guided"); } catch {}
+  if (m === "guided") { selectScenario(scen); return; }
+  Object.values(nodeEls).forEach((g) => g.classList.remove("dim"));
+  Object.values(edgeEls).forEach((l) => l.classList.add("used"));
+  $("prompt-line").innerHTML = "<span>live ·</span>events from .github/hooks/logs/audit.jsonl";
+  $("meter").textContent = "";
+  $("narr-step").textContent = "Live mode";
+  $("narr-title").textContent = "Watching your real agent";
+  $("narr-say").textContent = "Each hook event (prompt, tool call, tool result, finish) is animated as it happens. No server? Play the sample trace.";
+  $("narr-where").textContent = "";
+  liveSeen = 0;
+  if (location.protocol.startsWith("http") && !pollTimer) { poll(); pollTimer = setInterval(poll, 1000); }
+  else if (!location.protocol.startsWith("http")) poll();
+}
+$("mode-guided").addEventListener("click", () => setMode("guided"));
+$("mode-live").addEventListener("click", () => setMode("live"));
+
+/* ---------------------------------------------------------------- legend */
+const LEG = [["person", "you"], ["harness", "harness"], ["model", "model"], ["context", "agent / instructions"], ["skill", "skill"], ["tool", "built-in tool"], ["mcp", "MCP"], ["hook", "hook"], ["approve", "approval"]];
+$("legend").innerHTML = LEG.map(([k, l]) => `<span style="--kc: var(${KIND[k]})">${l}</span>`).join("");
+
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+renderScenarioChips();
+setMode(location.hash === "#live" ? "live" : "guided");
+})();
+</script>
+</body>
+</html>

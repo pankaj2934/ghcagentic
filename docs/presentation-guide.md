@@ -9,6 +9,7 @@
 - [ ] Settings → search "agent skills" and "hooks" → enabled (if those settings exist in your version)
 - [ ] Open `steps/06-mcp-local/.vscode/mcp.json` → **Start**. If it fails, MCP is blocked by policy: use the fallback (below)
 - [ ] `python evals/test_tools.py` is green in `steps/08-evals`. Optionally record a `baseline` run the day before, so `/judge baseline` has data
+- [ ] Open `visualizer/index.html` in a browser tab (Guided mode needs no setup). For Live mode, check that `python ../../visualizer/serve.py` works from `steps/08-evals`
 - [ ] Zoom the editor (`Ctrl +`) and chat font; turn off notifications
 - [ ] Optional: one VS Code window per step, already open, so switching is instant
 
@@ -17,7 +18,7 @@
 | Time | Section | Step | What to show | Key message |
 |------|---------|------|--------------|-------------|
 | 0:00–0:05 | Intro | – | Title, agenda, "by the end you'll know what every file in `.github/` does" | |
-| 0:05–0:12 | **What is an agent?** | – | [`concepts.md`](concepts.md) loop diagram | Model + loop + tools, inside a **harness** |
+| 0:05–0:12 | **What is an agent?** | – | [`concepts.md`](concepts.md) loop diagram, then the **visualizer**: step through *01 Hello World* | Model + loop + tools, inside a **harness** |
 | 0:12–0:17 | Hello, World | 01 | `hello.agent.md`, pick **Hello**, ask anything | An agent is one Markdown file. `tools: []` means it can only talk |
 | 0:17–0:22 | Instructions | 02 | `copilot-instructions.md`, sign-off appears even in built-in Agent; show References | Context the harness adds for you |
 | 0:22–0:27 | Prompt files | 03 | `/greet Priya` | Reusable task vs. persona |
@@ -31,6 +32,13 @@
 That's 65 minutes. To fit 60: run step 03 and step 07 as file walk-throughs
 (no live demo), and in step 08 show `grade.py example` instead of recording a
 live run. Running late on the day? Do the same, and skip `/judge`.
+
+## Using the visualizer during the talk
+
+* **Before each live demo**, step through the matching scenario in the visualizer (arrow keys) so people know what to look for, then run it for real in VS Code.
+* For **04 Skill**, stop on step 2 and point at the context panel: only the skill's *description* is there. Then press → and watch SKILL.md arrive.
+* For **05/06**, point at the *model calls* counter: one greeting takes 3 model calls.
+* **Live mode** for step 07/08: put Simple Browser next to the chat and let the audience watch the tool calls appear as you type.
 
 ## Lines that land
 
