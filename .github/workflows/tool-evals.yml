@@ -1,0 +1,26 @@
+# Layer 1 evals (tools) run on every push. They need no model and no secrets.
+name: tool-evals
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tool-evals:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Set a git user name (whoami reads it)
+        run: git config --global user.name "CI Bot"
+      - name: Run tool evals
+        working-directory: steps/08-evals
+        run: python evals/test_tools.py
+      - name: Grade the example run (expected to show one known failure)
+        working-directory: steps/08-evals
+        run: python evals/grade.py example || echo "The example run has a failure on purpose"

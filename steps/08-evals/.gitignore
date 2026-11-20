@@ -1,0 +1,4 @@
+.github/hooks/logs/
+cards/*.md
+evals/runs/*
+!evals/runs/example/

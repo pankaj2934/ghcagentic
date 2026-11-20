@@ -8,6 +8,7 @@
 - [ ] Run every demo prompt once, so you know the approval prompts and how long each takes
 - [ ] Settings → search "agent skills" and "hooks" → enabled (if those settings exist in your version)
 - [ ] Open `steps/06-mcp-local/.vscode/mcp.json` → **Start**. If it fails, MCP is blocked by policy: use the fallback (below)
+- [ ] `python evals/test_tools.py` is green in `steps/08-evals`. Optionally record a `baseline` run the day before, so `/judge baseline` has data
 - [ ] Zoom the editor (`Ctrl +`) and chat font; turn off notifications
 - [ ] Optional: one VS Code window per step, already open, so switching is instant
 
@@ -24,10 +25,12 @@
 | 0:37–0:45 | **Tools** | 05 | `Say hello to me`, **approval prompt**, the JSON output; remove `execute` and retry | The model asks, the harness acts. `tools:` is the allow-list |
 | 0:45–0:52 | **MCP (local)** | 06 | `python mcp/demo_client.py`, `mcp.json`, `Say hello to Priya` / `Bob` | Your own typed tools; a standard protocol |
 | 0:52–0:56 | Hooks & handoffs | 07 | *Make a greeting card* button → `cards/carlos.md`; `audit.log`; blocked `rm` | Advice vs. enforcement |
-| 0:56–1:00 | Wrap-up + Q&A | – | Final file tree (root README), "which one should I use?" table | |
+| 0:56–1:03 | **Evals** | 08 | `test_tools.py`; `grade.py example` (the "guessed without the tool" failure); `/judge` | Test properties and the trace, across several runs |
+| 1:03–1:05 | Wrap-up + Q&A | – | Final file tree (root README), "which one should I use?" table | |
 
-Running late? Shorten step 03 and step 07 to one sentence each and show
-their files without a live demo.
+That's 65 minutes. To fit 60: run step 03 and step 07 as file walk-throughs
+(no live demo), and in step 08 show `grade.py example` instead of recording a
+live run. Running late on the day? Do the same, and skip `/judge`.
 
 ## Lines that land
 
@@ -37,6 +40,7 @@ their files without a live demo.
 * (step 05) "Who ran that script? Not the model. The model *asked*, VS Code asked **you**, then VS Code ran it."
 * (step 06) "MCP is just JSON lines over stdin/stdout. `initialize`, `tools/list`, `tools/call`."
 * (step 07) "Markdown is advice. Hooks and the tool allow-list are enforcement."
+* (step 08) "The reply looked perfect, but the trace shows it never called the tool. It guessed. That's why you test the trajectory as well as the answer."
 
 ## Fallbacks
 

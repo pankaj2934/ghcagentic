@@ -17,6 +17,7 @@ see exactly which file does what.
 | 05 | [`steps/05-tool-script`](steps/05-tool-script) | **Tools** (built-in `execute` + a script in a skill) | `Say hello to me` | Hello, Pankaj! 👋 Good afternoon. |
 | 06 | [`steps/06-mcp-local`](steps/06-mcp-local) | **MCP** (your own tools, local) | `Say hello to Priya` | Namaste, Priya! 🙏 Good morning. Hope Bengaluru… |
 | 07 | [`steps/07-hooks-handoffs`](steps/07-hooks-handoffs) | **Hooks** and **handoffs** | `Say hello to Carlos` → *Make a greeting card* | `cards/carlos.md` + audit log |
+| 08 | [`steps/08-evals`](steps/08-evals) | **Evals**: tool tests, output + trace checks, LLM-as-judge | `python evals/grade.py example`, `/judge baseline` | a pass/fail report per case |
 
 ## How to use this repo
 
@@ -43,9 +44,11 @@ your-repo/
 │   ├── copilot-instructions.md        INSTRUCTIONS  always-on rules for this repo
 │   ├── agents/
 │   │   ├── hello.agent.md             AGENT         persona + tool allow-list + handoffs
-│   │   └── card-writer.agent.md       AGENT         a second agent with other tools
+│   │   ├── card-writer.agent.md       AGENT         a second agent with other tools
+│   │   └── judge.agent.md             AGENT         grades the others (LLM-as-judge)
 │   ├── prompts/
-│   │   └── greet.prompt.md            PROMPT        reusable /greet command
+│   │   ├── greet.prompt.md            PROMPT        reusable /greet command
+│   │   └── judge.prompt.md            PROMPT        /judge <run>
 │   ├── skills/
 │   │   ├── greeting-etiquette/        SKILL         know-how, loaded on demand
 │   │   │   ├── SKILL.md
@@ -58,8 +61,13 @@ your-repo/
 │       └── scripts/audit.py
 ├── .vscode/
 │   └── mcp.json                       TOOLS (MCP)   how to start your local tool server
-└── mcp/
-    └── hello_mcp_server.py            TOOLS (MCP)   the tool server itself
+├── mcp/
+│   └── hello_mcp_server.py            TOOLS (MCP)   the tool server itself
+└── evals/
+    ├── test_tools.py                  EVALS         deterministic tests for the tools
+    ├── cases.json                     EVALS         prompts + checks on reply and trace
+    ├── record.py / grade.py           EVALS         save replies, grade them
+    └── rubric.md                      EVALS         what the Judge agent scores
 ```
 
 ## Learn the concepts
@@ -71,5 +79,5 @@ your-repo/
 
 * VS Code with GitHub Copilot Chat (a recent version; custom agents, skills and hooks are newer features)
 * `git` (step 05 reads `git config user.name`)
-* Step 06/07 only: Python 3.9+ on the PATH (`python`, or `py` on Windows). Nothing to `pip install`. A Node version of the MCP server is included too, in case you'd rather use Node.
+* Step 06–08 only: Python 3.9+ on the PATH (`python`, or `py` on Windows). Nothing to `pip install`. A Node version of the MCP server is included too, in case you'd rather use Node.
 * Agent hooks (step 07) are a **preview** feature. Check that they're enabled in your VS Code.

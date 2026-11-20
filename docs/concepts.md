@@ -47,6 +47,8 @@ box is the harness.
 | **MCP server** | `.vscode/mcp.json` | A process that offers tools in a standard format. Local (stdio) or remote (HTTP). | 06 |
 | **Hook** | `.github/hooks/*.json` | Your command, run by the harness at lifecycle events. Deterministic: the model can't skip it. | 07 |
 | **Handoff** | `handoffs:` in the agent file | A button that passes the conversation to another agent. | 07 |
+| **Eval** | `evals/` (step 08) | A test for agent behaviour: checks properties of the reply and of the tool trace, across several runs. Can be rules or an LLM judge. | 08 |
+| **Trace** | audit-hook log (step 07/08) | The record of which tools the agent called, with which inputs. Lets you test *how* it answered. | 07, 08 |
 | **Subagent** | `agent` tool / `#runSubagent` | An agent that starts another agent with a fresh context for a subtask and gets back a summary. | (mention) |
 
 ## Which one should I use?
@@ -60,6 +62,7 @@ box is the harness.
 | the agent to reach a system (API, DB, ticket tool) | **tool**: an MCP server, or a script in a skill |
 | something that must happen every time, whatever the model decides | **hook** |
 | a workflow across roles (plan → build → review) | **handoffs** / **subagents** |
+| to know whether a change made the agent better or worse | **evals**: tool tests, output + trace checks, an LLM judge |
 
 ## Advice vs. enforcement
 
