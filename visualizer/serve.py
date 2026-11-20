@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Serve the flow visualizer and stream the agent's hook events to it.
 
-Run it from the step folder you have open in VS Code (07 or 08):
+Run it from the step folder you have open in VS Code (07–10):
 
     python ../../visualizer/serve.py
 

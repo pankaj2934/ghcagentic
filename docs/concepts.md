@@ -46,11 +46,11 @@ box is the harness.
 | **Tool** | `tools:` in the agent file, 🔧 picker in chat | Something the agent can *do*: read a file, edit, run a command, fetch a URL, call MCP. | 05 |
 | **MCP server** | `.vscode/mcp.json` | A process that offers tools in a standard format. Local (stdio) or remote (HTTP). | 06 |
 | **Hook** | `.github/hooks/*.json` | Your command, run by the harness at lifecycle events. Deterministic: the model can't skip it. | 07 |
-| **Handoff** | `handoffs:` in the agent file | A button that passes the conversation to another agent. | 07 |
-| **Eval** | `evals/` (step 08) | A test for agent behaviour: checks properties of the reply and of the tool trace, across several runs. Can be rules or an LLM judge. | 08 |
-| **Trace** | audit-hook log (step 07/08) | The record of which tools the agent called, with which inputs. Lets you test *how* it answered. | 07, 08 |
-| **Subagent** | `agent` tool, `agents:` in the agent file | An agent started by another agent's model, with a fresh, separate context. Only its final reply goes back. | 09 |
-| **Orchestrator** | e.g. `welcome-host.agent.md` | An agent whose job is to delegate: it runs subagents in order and passes one's output into the next one's task. | 09 |
+| **Handoff** | `handoffs:` in the agent file | A button that passes the conversation to another agent. | 08 |
+| **Eval** | `evals/` (step 09) | A test for agent behaviour: checks properties of the reply and of the tool trace, across several runs. Can be rules or an LLM judge. | 09 |
+| **Trace** | audit-hook log (steps 07–10) | The record of which tools the agent called, with which inputs. Lets you test *how* it answered. | 07, 09 |
+| **Subagent** | `agent` tool, `agents:` in the agent file | An agent started by another agent's model, with a fresh, separate context. Only its final reply goes back. | 10 |
+| **Orchestrator** | e.g. `welcome-host.agent.md` | An agent whose job is to delegate: it runs subagents in order and passes one's output into the next one's task. | 10 |
 
 ## Which one should I use?
 

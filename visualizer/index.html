@@ -206,7 +206,7 @@ pre.cmd { font: 400 0.78rem/1.5 var(--f-mono); background: var(--panel-2); borde
           <button class="btn" id="b-clear" type="button">Clear</button>
         </div>
         <div id="live-help">
-          <p style="margin:10px 0 0;font-size:.85rem;color:var(--muted)">To see your real Copilot session, run this from the step 07, 08 or 09 folder, then chat with Hello (or Welcome Host in step 09):</p>
+          <p style="margin:10px 0 0;font-size:.85rem;color:var(--muted)">To see your real Copilot session, run this from a step 07–10 folder, then chat with Hello (or Welcome Host in step 10):</p>
           <pre class="cmd">python ../../visualizer/serve.py</pre>
         </div>
         <div class="live-log" id="live-log" style="margin-top:10px"></div>
@@ -395,7 +395,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: "hook", step: "07", name: "Hook blocks a tool", folder: "steps/07-hooks-handoffs", prompt: "Delete the cards folder using the terminal",
+    id: "hook", step: "07", name: "Hook blocks a tool", folder: "steps/07-hooks", prompt: "Delete the cards folder using the terminal",
     steps: [
       youSay("Delete the cards folder using the terminal"),
       { title: "The harness builds the context and calls the model",
@@ -417,7 +417,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: "handoff", step: "07", name: "Handoff", folder: "steps/07-hooks-handoffs", prompt: "Say hello to Carlos → Make a greeting card",
+    id: "handoff", step: "08", name: "Handoff", folder: "steps/08-handoffs", prompt: "Say hello to Carlos → Make a greeting card",
     steps: [
       { title: "The reply comes with a handoff button", where: "hello.agent.md → handoffs:",
         say: "Hello greeted Carlos. Its agent file lists a handoff, so the harness shows a “Make a greeting card” button under the reply.",
@@ -442,7 +442,7 @@ const SCENARIOS = [
     ],
   },
   {
-    id: "multi", step: "09", name: "Multi-agent", folder: "steps/09-multi-agent", prompt: "Welcome Priya to the team",
+    id: "multi", step: "10", name: "Multi-agent", folder: "steps/10-multi-agent", prompt: "Welcome Priya to the team",
     steps: [
       { owner: "Welcome Host", title: "You ask the orchestrator",
         say: "You pick the Welcome Host agent. It's an orchestrator: it plans the work and hands each part to another agent.",

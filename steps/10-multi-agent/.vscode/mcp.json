@@ -1,0 +1,17 @@
+{
+  // Local MCP server: VS Code starts it as a child process and talks to it
+  // over stdin/stdout. Nothing leaves your machine, nothing to install.
+  "servers": {
+    "hello-mcp": {
+      "type": "stdio",
+      // Windows: use "py" if "python" opens the Microsoft Store.
+      // macOS/Linux: you may need "python3".
+      "command": "python",
+      "args": ["${workspaceFolder}/mcp/hello_mcp_server.py"]
+
+      // Have Node instead? Use the JavaScript version:
+      // "command": "node",
+      // "args": ["${workspaceFolder}/mcp/hello-mcp-server.js"]
+    }
+  }
+}

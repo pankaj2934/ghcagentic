@@ -4,12 +4,12 @@
 
 - [ ] VS Code + Copilot Chat signed in; custom agents show up in the agent dropdown
 - [ ] `git config user.name` prints your name (step 05 depends on it)
-- [ ] `python --version` (or `py --version` on Windows) shows Python 3.9 or newer, for step 06/07. Use the same command name in `.vscode/mcp.json` and `.github/hooks/audit.json`
+- [ ] `python --version` (or `py --version` on Windows) shows Python 3.9 or newer, for steps 06–10. Use the same command name in `.vscode/mcp.json` and `.github/hooks/audit.json`
 - [ ] Run every demo prompt once, so you know the approval prompts and how long each takes
 - [ ] Settings → search "agent skills" and "hooks" → enabled (if those settings exist in your version)
 - [ ] Open `steps/06-mcp-local/.vscode/mcp.json` → **Start**. If it fails, MCP is blocked by policy: use the fallback (below)
-- [ ] `python evals/test_tools.py` is green in `steps/08-evals`. Optionally record a `baseline` run the day before, so `/judge baseline` has data
-- [ ] Open `visualizer/index.html` in a browser tab (Guided mode needs no setup). For Live mode, check that `python ../../visualizer/serve.py` works from `steps/08-evals`
+- [ ] `python evals/test_tools.py` is green in `steps/09-evals`. Optionally record a `baseline` run the day before, so `/judge baseline` has data
+- [ ] Open `visualizer/index.html` in a browser tab (Guided mode needs no setup). For Live mode, check that `python ../../visualizer/serve.py` works from `steps/10-multi-agent`
 - [ ] Zoom the editor (`Ctrl +`) and chat font; turn off notifications
 - [ ] Optional: one VS Code window per step, already open, so switching is instant
 
@@ -25,13 +25,14 @@
 | 0:27–0:37 | **Skills** | 04 | `Say hello to Priya in Hindi`, expand tool calls: SKILL.md → languages.md; then Swahili | Loaded on demand (progressive disclosure), open format |
 | 0:37–0:45 | **Tools** | 05 | `Say hello to me`, **approval prompt**, the JSON output; remove `execute` and retry | The model asks, the harness acts. `tools:` is the allow-list |
 | 0:45–0:52 | **MCP (local)** | 06 | `python mcp/demo_client.py`, `mcp.json`, `Say hello to Priya` / `Bob` | Your own typed tools; a standard protocol |
-| 0:52–0:56 | Hooks & handoffs | 07 | *Make a greeting card* button → `cards/carlos.md`; `audit.log`; blocked `rm` | Advice vs. enforcement |
-| (bonus) | **Multi-agent** | 09 | Guided *09 Multi-agent*, then live: `Welcome Priya to the team` with the visualizer in Live mode | Orchestrator + subagents: output of one is the input of the next; a fresh context each |
-| 0:56–1:03 | **Evals** | 08 | `test_tools.py`; `grade.py example` (the "guessed without the tool" failure); `/judge` | Test properties and the trace, across several runs |
+| 0:52–0:55 | Hooks | 07 | `audit.log` after a greeting; blocked `rm`; visualizer Live mode | Advice vs. enforcement |
+| 0:55–0:57 | Handoffs | 08 | *Make a greeting card* button → `cards/carlos.md` | A person decides when the next agent starts |
+| 0:57–1:03 | **Evals** | 09 | `test_tools.py`; `grade.py example` (the "guessed without the tool" failure); `/judge` | Test properties and the trace, across several runs |
+| (bonus) | **Multi-agent** | 10 | Guided *10 Multi-agent*, then live: `Welcome Priya to the team` with the visualizer in Live mode | Orchestrator + subagents: output of one is the input of the next; a fresh context each |
 | 1:03–1:05 | Wrap-up + Q&A | – | Final file tree (root README), "which one should I use?" table | |
 
-That's 65 minutes. To fit 60: run step 03 and step 07 as file walk-throughs
-(no live demo), and in step 08 show `grade.py example` instead of recording a
+That's 65 minutes. To fit 60: run steps 03 and 08 as file walk-throughs
+(no live demo), and in step 09 show `grade.py example` instead of recording a
 live run. Running late on the day? Do the same, and skip `/judge`.
 
 ## Using the visualizer during the talk
@@ -39,7 +40,7 @@ live run. Running late on the day? Do the same, and skip `/judge`.
 * **Before each live demo**, step through the matching scenario in the visualizer (arrow keys) so people know what to look for, then run it for real in VS Code.
 * For **04 Skill**, stop on step 2 and point at the context panel: only the skill's *description* is there. Then press → and watch SKILL.md arrive.
 * For **05/06**, point at the *model calls* counter: one greeting takes 3 model calls.
-* **Live mode** for step 07/08: put Simple Browser next to the chat and let the audience watch the tool calls appear as you type.
+* **Live mode** for steps 07–10: put Simple Browser next to the chat and let the audience watch the tool calls appear as you type.
 
 ## Lines that land
 
@@ -49,8 +50,8 @@ live run. Running late on the day? Do the same, and skip `/judge`.
 * (step 05) "Who ran that script? Not the model. The model *asked*, VS Code asked **you**, then VS Code ran it."
 * (step 06) "MCP is just JSON lines over stdin/stdout. `initialize`, `tools/list`, `tools/call`."
 * (step 07) "Markdown is advice. Hooks and the tool allow-list are enforcement."
-* (step 09) "Host has exactly one tool: start another agent. It can't do the work, so it has to delegate. And it only ever sees one line back from each helper."
-* (step 08) "The reply looked perfect, but the trace shows it never called the tool. It guessed. That's why you test the trajectory as well as the answer."
+* (step 10) "Host has exactly one tool: start another agent. It can't do the work, so it has to delegate. And it only ever sees one line back from each helper."
+* (step 09) "The reply looked perfect, but the trace shows it never called the tool. It guessed. That's why you test the trajectory as well as the answer."
 
 ## Fallbacks
 

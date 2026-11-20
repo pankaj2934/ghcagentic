@@ -1,4 +1,4 @@
-# Step 08: Evals (how do you know your agent works?)
+# Step 09: Evals (how do you know your agent works?)
 
 **New concept:** an *eval* is a test for an agent. LLM replies vary from run
 to run, so you don't check for one exact answer. You check **properties**:
@@ -8,7 +8,7 @@ This step adds three layers of evals. They're all plain Python with nothing
 to install, and none of them needs an API key.
 
 ```
-08-evals/
+09-evals/
 ├── evals/
 │   ├── test_tools.py        ← NEW  layer 1: unit tests for the TOOLS (MCP server, hook, script)
 │   ├── cases.json           ← NEW  layer 2: test prompts + checks on the reply and the trace
@@ -31,7 +31,7 @@ to install, and none of them needs an API key.
 | **3. LLM-as-judge** | Things rules can't check: grounded? right tone? | `/judge <run>` in chat (the Judge agent) | no, the judge is a model too |
 
 The **trace** is the trick that makes layer 2 work without any API: the
-step-07 audit hook logs every tool call, and `record.py` saves the lines
+step 07 audit hook logs every tool call, and `record.py` saves the lines
 logged since the previous recording next to each reply. So you can check
 *how* the agent got an answer, as well as the answer itself ("did it really
 call `lookup_teammate`, or did it guess?").

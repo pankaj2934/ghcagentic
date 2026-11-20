@@ -10,29 +10,29 @@ Open `visualizer/index.html` in any browser by double-clicking it, or in VS Code
 right-click the file → **Open with Live Preview**, or use **Simple Browser**
 (see below).
 
-* Pick a scenario: **01 Hello World, 02 Instructions, 04 Skill, 05 Tool (script), 06 MCP tool, 07 Hook blocks a tool, 07 Handoff, 09 Multi-agent**
+* Pick a scenario: **01 Hello World, 02 Instructions, 04 Skill, 05 Tool (script), 06 MCP tool, 07 Hook blocks a tool, 08 Handoff, 10 Multi-agent**
 * **→ / ←** step forward and back, **Space** plays it on its own
 * Each step animates the message along the wire and explains it
 * The **Context window** panel shows what the model sees on its next call.
   Watch skills arrive as a one-line description (*always*), then the full
   SKILL.md only when it's needed (*on demand*), then tool results.
 * The counters show **model calls** and **tool runs**, which makes the loop visible.
-* In **09 Multi-agent** the context panel follows the agent whose loop is
+* In **10 Multi-agent** the context panel follows the agent whose loop is
   running (dashed outline in the Agents lane): Host, then Hello with a fresh
   context, then Card Writer with a fresh context, then back to Host.
 
 ## Live mode: watch your real agent
 
-Live mode animates the hook events from steps 07, 08 and 09 as they happen.
+Live mode animates the hook events from steps 07–10 as they happen.
 
-1. Open `steps/09-multi-agent` (or `07-hooks-handoffs` / `08-evals`) in VS Code.
+1. Open `steps/10-multi-agent` (or `07-hooks`, `08-handoffs`, `09-evals`) in VS Code.
 2. In the terminal:
    ```bash
    python ../../visualizer/serve.py
    ```
 3. In VS Code: **Command Palette → Simple Browser: Show →** `http://localhost:8765/#live`
    and drag it next to the chat panel.
-4. Chat with the **Hello** agent, or with **Welcome Host** in step 09. Every prompt, tool call,
+4. Chat with the **Hello** agent, or with **Welcome Host** in step 10. Every prompt, tool call,
    tool result, subagent start/stop and finish appears on the diagram. While a
    subagent is working, its box in the Agents lane gets a dashed outline.
 

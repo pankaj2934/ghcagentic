@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Agent hook: runs when a prompt arrives, before and after every tool call,
-when a subagent starts/stops (step 09), and when the agent finishes
+when a subagent starts/stops (step 10), and when the agent finishes
 (see ../audit.json).
 
 1. AUDIT: appends one line per event to .github/hooks/logs/audit.log

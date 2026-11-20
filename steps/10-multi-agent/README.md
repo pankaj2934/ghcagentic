@@ -1,4 +1,4 @@
-# Step 09: Multi-agent (one agent's output is another agent's input)
+# Step 10: Multi-agent (one agent's output is another agent's input)
 
 **New concept:** an *orchestrator* agent that does no work itself. It runs
 other agents as **subagents** and passes the output of one into the input
@@ -20,7 +20,7 @@ of the next.
 ```
 
 ```
-09-multi-agent/
+10-multi-agent/
 └── .github/
     ├── agents/
     │   ├── welcome-host.agent.md  ← NEW: orchestrator, tools: ['agent'], agents: [Hello, Card Writer]
@@ -31,9 +31,9 @@ of the next.
     └── hooks/audit.json           ← changed: also logs SubagentStart / SubagentStop
 ```
 
-Everything else (skills, MCP server, evals) is carried over from step 08.
+Everything else (skills, MCP server, evals) is carried over from step 09.
 
-## Handoff (step 07) vs. subagents (this step)
+## Handoff (step 08) vs. subagents (this step)
 
 | | Handoff | Subagent |
 |---|---|---|
@@ -44,7 +44,7 @@ Everything else (skills, MCP server, evals) is carried over from step 08.
 
 ## Demo
 
-1. Open `steps/09-multi-agent`, start the MCP server (as in step 06).
+1. Open `steps/10-multi-agent`, start the MCP server (as in step 06).
 2. Optional, to watch it live (recommended), in the terminal:
    ```bash
    python ../../visualizer/serve.py
@@ -83,5 +83,5 @@ final reply *and* that the trace shows both subagents and the MCP call.
 > features, and they may be named differently in your version. If Host can't
 > start Hello, check that the `agent` tool is enabled in the tool picker, and
 > look at the subagents section of the VS Code docs. You can still show the
-> same pipeline with the step 07 handoff (a person clicks instead) and with
+> same pipeline with the step 08 handoff (a person clicks instead) and with
 > **Play sample: multi-agent** in the visualizer.

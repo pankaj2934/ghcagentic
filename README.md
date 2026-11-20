@@ -16,9 +16,10 @@ see exactly which file does what.
 | 04 | [`steps/04-skill`](steps/04-skill) | **Skill** (`SKILL.md` + reference) | `Say hello to Priya in Hindi` | Namaste, Priya! 🙏 |
 | 05 | [`steps/05-tool-script`](steps/05-tool-script) | **Tools** (built-in `execute` + a script in a skill) | `Say hello to me` | Hello, Pankaj! 👋 Good afternoon. |
 | 06 | [`steps/06-mcp-local`](steps/06-mcp-local) | **MCP** (your own tools, local) | `Say hello to Priya` | Namaste, Priya! 🙏 Good morning. Hope Bengaluru… |
-| 07 | [`steps/07-hooks-handoffs`](steps/07-hooks-handoffs) | **Hooks** and **handoffs** | `Say hello to Carlos` → *Make a greeting card* | `cards/carlos.md` + audit log |
-| 08 | [`steps/08-evals`](steps/08-evals) | **Evals**: tool tests, output + trace checks, LLM-as-judge | `python evals/grade.py example`, `/judge baseline` | a pass/fail report per case |
-| 09 | [`steps/09-multi-agent`](steps/09-multi-agent) | **Multi-agent**: an orchestrator runs Hello, then passes its output to Card Writer | `Welcome Priya to the team` (Welcome Host agent) | greeting + `cards/priya.md`, made by two subagents |
+| 07 | [`steps/07-hooks`](steps/07-hooks) | **Hooks** (audit log + a guard the model can't skip) | `Say hello to Carlos`, then `delete the cards folder` | `audit.log` + the delete is blocked |
+| 08 | [`steps/08-handoffs`](steps/08-handoffs) | **Handoffs** (a button passes the chat to another agent) | `Say hello to Carlos` → *Make a greeting card* | `cards/carlos.md` |
+| 09 | [`steps/09-evals`](steps/09-evals) | **Evals**: tool tests, output + trace checks, LLM-as-judge | `python evals/grade.py example`, `/judge baseline` | a pass/fail report per case |
+| 10 | [`steps/10-multi-agent`](steps/10-multi-agent) | **Multi-agent**: an orchestrator runs Hello, then passes its output to Card Writer | `Welcome Priya to the team` (Welcome Host agent) | greeting + `cards/priya.md`, made by two subagents |
 
 ## How to use this repo
 
@@ -74,7 +75,7 @@ your-repo/
 
 ## Learn the concepts
 
-* [`visualizer/`](visualizer): **Copilot Agent Flow**, an animated diagram of what travels between you, the harness, the model, skills, tools, MCP and hooks for each step. Guided mode opens straight from disk. Live mode animates your real agent's hook events, subagents included (`python ../../visualizer/serve.py` from step 07, 08 or 09)
+* [`visualizer/`](visualizer): **Copilot Agent Flow**, an animated diagram of what travels between you, the harness, the model, skills, tools, MCP and hooks for each step. Guided mode opens straight from disk. Live mode animates your real agent's hook events, subagents included (`python ../../visualizer/serve.py` from a step 07–10 folder)
 
 * [`docs/concepts.md`](docs/concepts.md): what an agent, the harness, tools, skills, MCP and hooks are, with a diagram of the agent loop
 * [`docs/presentation-guide.md`](docs/presentation-guide.md): a 60-minute run sheet with timings, demo prompts and fallbacks
@@ -83,5 +84,5 @@ your-repo/
 
 * VS Code with GitHub Copilot Chat (a recent version; custom agents, skills and hooks are newer features)
 * `git` (step 05 reads `git config user.name`)
-* Step 06–09 only: Python 3.9+ on the PATH (`python`, or `py` on Windows). Nothing to `pip install`. A Node version of the MCP server is included too, in case you'd rather use Node.
-* Agent hooks (step 07) are a **preview** feature. Check that they're enabled in your VS Code.
+* Step 06–10 only: Python 3.9+ on the PATH (`python`, or `py` on Windows). Nothing to `pip install`. A Node version of the MCP server is included too, in case you'd rather use Node.
+* Agent hooks (step 07 onwards) are a **preview** feature. Check that they're enabled in your VS Code.
